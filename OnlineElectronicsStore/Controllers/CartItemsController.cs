@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class CartItemsController : ControllerBase

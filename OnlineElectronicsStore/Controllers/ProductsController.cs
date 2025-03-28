@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -8,24 +10,24 @@ namespace OnlineElectronicsStore.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly IProductService _productService;
+        private readonly AppDbContext _context;
 
-        public ProductsController(IProductService productService)
+        public ProductsController(AppDbContext context)
         {
-            _productService = productService;
+            _context = context;
         }
 
-        // GET: api/products
+        [AllowAnonymous]
         [HttpGet]
-        public IActionResult GetProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<ActionResult<IEnumerable<Product>>> GetProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber <= 0 || pageSize <= 0)
                 return BadRequest(new { Message = "Invalid pagination values." });
 
-            var products = _productService.GetAllProducts()
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
+            var products = await _context.Products
+                                         .Skip((pageNumber - 1) * pageSize)
+                                         .Take(pageSize)
+                                         .ToListAsync();
 
             if (!products.Any())
                 return NotFound(new { Message = "No products found." });
@@ -33,32 +35,33 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(products);
         }
 
-        // GET: api/products/{id}
+        [AllowAnonymous]
         [HttpGet("{id}")]
-        public IActionResult GetProduct(int id)
+        public async Task<ActionResult<Product>> GetProduct(int id)
         {
-            var product = _productService.GetById(id);
+            var product = await _context.Products.FindAsync(id);
             if (product == null)
                 return NotFound(new { Message = "Product not found." });
 
             return Ok(product);
         }
 
-        // POST: api/products
+        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public IActionResult PostProduct([FromBody] Product product)
+        public async Task<ActionResult<Product>> PostProduct([FromBody] Product product)
         {
             if (product == null || !ModelState.IsValid)
-                return BadRequest(new { Message = "Invalid product data." });
+                return BadRequest(ModelState);
 
-            _productService.AddProduct(product);
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
-        // PUT: api/products/{id}
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public IActionResult PutProduct(int id, [FromBody] Product product)
+        public async Task<IActionResult> PutProduct(int id, [FromBody] Product product)
         {
             if (id != product.Id)
                 return BadRequest(new { Message = "Product ID mismatch." });
@@ -66,23 +69,34 @@ namespace OnlineElectronicsStore.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var existing = _productService.GetById(id);
-            if (existing == null)
-                return NotFound(new { Message = "Product not found." });
+            _context.Entry(product).State = EntityState.Modified;
 
-            _productService.UpdateProduct(product);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Products.Any(e => e.Id == id))
+                    return NotFound(new { Message = "Product not found." });
+                else
+                    throw;
+            }
+
             return Ok(new { Message = "Product updated successfully." });
         }
 
-        // DELETE: api/products/{id}
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public IActionResult DeleteProduct(int id)
+        public async Task<IActionResult> DeleteProduct(int id)
         {
-            var existing = _productService.GetById(id);
-            if (existing == null)
+            var product = await _context.Products.FindAsync(id);
+            if (product == null)
                 return NotFound(new { Message = "Product not found." });
 
-            _productService.DeleteProduct(id);
+            _context.Products.Remove(product);
+            await _context.SaveChangesAsync();
+
             return Ok(new { Message = "Product deleted successfully." });
         }
     }

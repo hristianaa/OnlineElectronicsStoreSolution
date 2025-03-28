@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : ControllerBase
@@ -15,61 +17,27 @@ namespace OnlineElectronicsStore.Controllers
             _userService = userService;
         }
 
-        // GET: api/users
         [HttpGet]
-        public IActionResult GetUsers()
+        public IActionResult GetAll()
         {
-            var users = _userService.GetAll();
-            return Ok(users);
+            return Ok(_userService.GetAll());
         }
 
-        // GET: api/users/{id}
         [HttpGet("{id}")]
-        public IActionResult GetUser(int id)
+        public IActionResult GetById(int id)
         {
             var user = _userService.GetById(id);
             if (user == null)
-                return NotFound(new { Message = "User not found." });
+                return NotFound();
 
             return Ok(user);
         }
 
-        // POST: api/users
-        [HttpPost]
-        public IActionResult PostUser([FromBody] User user)
-        {
-            if (!ModelState.IsValid || user == null)
-                return BadRequest(new { Message = "Invalid user data." });
-
-            _userService.Create(user);
-            return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
-        }
-
-        // PUT: api/users/{id}
-        [HttpPut("{id}")]
-        public IActionResult PutUser(int id, [FromBody] User user)
-        {
-            if (id != user.Id)
-                return BadRequest(new { Message = "User ID mismatch." });
-
-            var existing = _userService.GetById(id);
-            if (existing == null)
-                return NotFound(new { Message = "User not found." });
-
-            _userService.Update(user);
-            return Ok(new { Message = "User updated successfully." });
-        }
-
-        // DELETE: api/users/{id}
         [HttpDelete("{id}")]
-        public IActionResult DeleteUser(int id)
+        public IActionResult Delete(int id)
         {
-            var existing = _userService.GetById(id);
-            if (existing == null)
-                return NotFound(new { Message = "User not found." });
-
             _userService.Delete(id);
-            return Ok(new { Message = "User deleted successfully." });
+            return Ok(new { Message = "User deleted." });
         }
     }
 }

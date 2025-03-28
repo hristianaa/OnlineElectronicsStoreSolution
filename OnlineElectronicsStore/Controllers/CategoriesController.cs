@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace OnlineElectronicsStore.Controllers
 {

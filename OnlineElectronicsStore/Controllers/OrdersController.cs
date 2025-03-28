@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
+    [Authorize] // Require login for all endpoints
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
@@ -15,7 +17,8 @@ namespace OnlineElectronicsStore.Controllers
             _orderService = orderService;
         }
 
-        // GET: api/orders
+        // GET: api/orders (Admin only)
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetOrders()
         {
@@ -26,7 +29,7 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(orders);
         }
 
-        // GET: api/orders/{id}
+        // GET: api/orders/{id} (Admins and logged-in users)
         [HttpGet("{id}")]
         public IActionResult GetOrder(int id)
         {
@@ -37,7 +40,7 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(order);
         }
 
-        // GET: api/orders/user/{userId}
+        // GET: api/orders/user/{userId} (User-specific orders)
         [HttpGet("user/{userId}")]
         public IActionResult GetOrdersByUser(int userId)
         {
@@ -48,7 +51,7 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(userOrders);
         }
 
-        // POST: api/orders
+        // POST: api/orders (All logged-in users can place orders)
         [HttpPost]
         public IActionResult PostOrder([FromBody] Order order)
         {
@@ -56,11 +59,11 @@ namespace OnlineElectronicsStore.Controllers
                 return BadRequest(new { Message = "Invalid order data." });
 
             _orderService.Create(order);
-
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
         }
 
-        // DELETE: api/orders/{id}
+        // DELETE: api/orders/{id} (Admin only)
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult DeleteOrder(int id)
         {
@@ -73,3 +76,4 @@ namespace OnlineElectronicsStore.Controllers
         }
     }
 }
+

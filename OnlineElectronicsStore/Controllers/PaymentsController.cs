@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class PaymentsController : ControllerBase
@@ -38,7 +40,7 @@ namespace OnlineElectronicsStore.Controllers
                 return BadRequest(ModelState);
 
             _paymentService.Create(payment);
-            return Ok(new { Message = "Payment created." });
+            return Ok(new { Message = "Payment recorded." });
         }
 
         [HttpPut("mark-paid/{id}")]

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace OnlineElectronicsStore.Controllers;
 
