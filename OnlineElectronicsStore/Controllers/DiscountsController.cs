@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
+using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -9,54 +8,44 @@ namespace OnlineElectronicsStore.Controllers
     [ApiController]
     public class DiscountsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IDiscountService _discountService;
 
-        public DiscountsController(AppDbContext context)
+        public DiscountsController(IDiscountService discountService)
         {
-            _context = context;
+            _discountService = discountService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Discount>>> GetDiscounts()
+        public IActionResult GetAll()
         {
-            return await _context.Discounts.ToListAsync();
+            return Ok(_discountService.GetAll());
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Discount>> GetDiscount(int id)
+        [HttpGet("code/{code}")]
+        public IActionResult GetByCode(string code)
         {
-            var discount = await _context.Discounts.FindAsync(id);
-            if (discount == null) return NotFound();
-            return discount;
+            var discount = _discountService.GetByCode(code);
+            if (discount == null)
+                return NotFound(new { Message = "Discount code not found." });
+
+            return Ok(discount);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Discount>> PostDiscount(Discount discount)
+        public IActionResult Create([FromBody] Discount discount)
         {
-            _context.Discounts.Add(discount);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetDiscount), new { id = discount.Id }, discount);
-        }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutDiscount(int id, Discount discount)
-        {
-            if (id != discount.Id) return BadRequest();
-
-            _context.Entry(discount).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            _discountService.Create(discount);
+            return Ok(new { Message = "Discount added." });
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteDiscount(int id)
+        public IActionResult Delete(int id)
         {
-            var discount = await _context.Discounts.FindAsync(id);
-            if (discount == null) return NotFound();
-
-            _context.Discounts.Remove(discount);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            _discountService.Delete(id);
+            return Ok(new { Message = "Discount deleted." });
         }
     }
 }

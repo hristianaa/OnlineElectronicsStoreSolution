@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
+using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -9,54 +8,51 @@ namespace OnlineElectronicsStore.Controllers
     [ApiController]
     public class PaymentsController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IPaymentService _paymentService;
 
-        public PaymentsController(AppDbContext context)
+        public PaymentsController(IPaymentService paymentService)
         {
-            _context = context;
+            _paymentService = paymentService;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
+        public IActionResult GetPayments()
         {
-            return await _context.Payments.ToListAsync();
+            return Ok(_paymentService.GetAll());
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Payment>> GetPayment(int id)
+        public IActionResult GetPayment(int id)
         {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null) return NotFound();
-            return payment;
+            var payment = _paymentService.GetById(id);
+            if (payment == null)
+                return NotFound(new { Message = "Payment not found." });
+
+            return Ok(payment);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Payment>> PostPayment(Payment payment)
+        public IActionResult CreatePayment([FromBody] Payment payment)
         {
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetPayment), new { id = payment.Id }, payment);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _paymentService.Create(payment);
+            return Ok(new { Message = "Payment created." });
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPayment(int id, Payment payment)
+        [HttpPut("mark-paid/{id}")]
+        public IActionResult MarkAsPaid(int id)
         {
-            if (id != payment.Id) return BadRequest();
-
-            _context.Entry(payment).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            _paymentService.MarkAsPaid(id);
+            return Ok(new { Message = "Payment marked as paid." });
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePayment(int id)
+        public IActionResult DeletePayment(int id)
         {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null) return NotFound();
-
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            _paymentService.Delete(id);
+            return Ok(new { Message = "Payment deleted." });
         }
     }
 }
