@@ -7,9 +7,14 @@ using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
 
 
-
-
 var builder = WebApplication.CreateBuilder(args);
+
+// Register services
+builder.Services.AddScoped<IProductService, ProductService>();
+
+
+
+
 
 // Load JWT settings from configuration
 var jwtSettings = builder.Configuration.GetSection("Jwt");
