@@ -10,12 +10,20 @@ namespace OnlineElectronicsStore.Models
 
         [Required]
         public int OrderId { get; set; }
+
+        // 🔗 Navigation property
         public Order Order { get; set; }
 
         [Required]
         [Column(TypeName = "decimal(18, 2)")]
         public decimal TotalAmount { get; set; }
 
-        public DateTime InvoiceDate { get; set; } = DateTime.Now;
+        // 📧 Optional billing email for recordkeeping or guest orders
+        [Required]
+        [EmailAddress]
+        public string BillingEmail { get; set; } = string.Empty;
+
+        // 📅 Auto timestamp when generated
+        public DateTime InvoiceDate { get; set; } = DateTime.UtcNow;
     }
 }

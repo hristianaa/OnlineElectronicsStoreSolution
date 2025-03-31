@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
+using OnlineElectronicsStore.Services.Helpers;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
@@ -17,38 +18,56 @@ namespace OnlineElectronicsStore.Controllers
             _invoiceService = invoiceService;
         }
 
+        // 📄 GET all invoices
         [HttpGet]
-        public IActionResult GetInvoices()
+        public async Task<IActionResult> GetInvoices()
         {
-            var invoices = _invoiceService.GetAll();
+            var invoices = await _invoiceService.GetAllAsync();
             return Ok(invoices);
         }
 
+        // 📄 GET single invoice by ID
         [HttpGet("{id}")]
-        public IActionResult GetInvoice(int id)
+        public async Task<IActionResult> GetInvoice(int id)
         {
-            var invoice = _invoiceService.GetById(id);
+            var invoice = await _invoiceService.GetByIdAsync(id);
             if (invoice == null)
-                return NotFound(new { Message = "Invoice not found." });
+                return NotFound(new { Message = $"Invoice with ID {id} not found." });
 
             return Ok(invoice);
         }
 
+        // 🧾 POST create new invoice
         [HttpPost]
-        public IActionResult CreateInvoice([FromBody] Invoice invoice)
+        public async Task<IActionResult> CreateInvoice([FromBody] Invoice invoice)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            _invoiceService.Create(invoice);
-            return Ok(new { Message = "Invoice created." });
+            var created = await _invoiceService.CreateAsync(invoice);
+            return CreatedAtAction(nameof(GetInvoice), new { id = created.Id }, created);
         }
 
+        // ❌ DELETE invoice by ID
         [HttpDelete("{id}")]
-        public IActionResult DeleteInvoice(int id)
+        public async Task<IActionResult> DeleteInvoice(int id)
         {
-            _invoiceService.Delete(id);
-            return Ok(new { Message = "Invoice deleted." });
+            var deleted = await _invoiceService.DeleteAsync(id);
+            if (!deleted)
+                return NotFound(new { Message = $"Invoice with ID {id} not found or already deleted." });
+
+            return Ok(new { Message = $"Invoice {id} deleted successfully." });
         }
+        [HttpGet("{id}/pdf")]
+        public async Task<IActionResult> DownloadPdf(int id)
+        {
+            var invoice = await _invoiceService.GetByIdAsync(id);
+            if (invoice == null)
+                return NotFound("Invoice not found");
+
+            var pdfBytes = InvoicePdfGenerator.GeneratePdf(invoice);
+            return File(pdfBytes, "application/pdf", $"Invoice_{invoice.Id}.pdf");
+        }
+
     }
 }

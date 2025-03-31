@@ -1,4 +1,5 @@
-﻿using OnlineElectronicsStore.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
@@ -13,30 +14,40 @@ namespace OnlineElectronicsStore.Services.Implementations
             _context = context;
         }
 
-        public IEnumerable<Invoice> GetAll()
+        public async Task<IEnumerable<Invoice>> GetAllAsync()
         {
-            return _context.Invoices.ToList();
+            return await _context.Invoices
+                .Include(i => i.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .ToListAsync();
         }
 
-        public Invoice? GetById(int id)
+        public async Task<Invoice?> GetByIdAsync(int id)
         {
-            return _context.Invoices.FirstOrDefault(i => i.Id == id);
+            return await _context.Invoices
+                .Include(i => i.Order)
+                .ThenInclude(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(i => i.Id == id);
         }
 
-        public void Create(Invoice invoice)
+        public async Task<Invoice> CreateAsync(Invoice invoice)
         {
             _context.Invoices.Add(invoice);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+            return invoice;
         }
 
-        public void Delete(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var invoice = _context.Invoices.Find(id);
-            if (invoice != null)
-            {
-                _context.Invoices.Remove(invoice);
-                _context.SaveChanges();
-            }
+            var invoice = await _context.Invoices.FindAsync(id);
+            if (invoice == null)
+                return false;
+
+            _context.Invoices.Remove(invoice);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }
