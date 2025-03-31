@@ -10,5 +10,8 @@ namespace OnlineElectronicsStore.Services.Interfaces
         void Create(User user);
         void Update(User user);
         void Delete(int id);
+        Task<IEnumerable<User>> GetAllAsync();
+        Task<User?> GetByIdAsync(int id);
+        Task DeleteAsync(int id);
     }
 }

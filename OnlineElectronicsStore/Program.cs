@@ -68,6 +68,8 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+
 
 
 var app = builder.Build();

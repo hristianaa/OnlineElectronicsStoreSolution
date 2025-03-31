@@ -19,5 +19,9 @@ namespace OnlineElectronicsStore.Models
 
         // Navigation Property
         public ICollection<CartItem> CartItems { get; set; }
+        
+        public decimal TotalAmount { get; set; }
+
+        public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
     }
 }

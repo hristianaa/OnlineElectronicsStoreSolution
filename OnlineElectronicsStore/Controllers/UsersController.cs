@@ -17,27 +17,35 @@ namespace OnlineElectronicsStore.Controllers
             _userService = userService;
         }
 
+        // 🔍 Get all users
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(_userService.GetAll());
+            var users = await _userService.GetAllAsync();
+            return Ok(users);
         }
 
+        // 👤 Get user by ID
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var user = _userService.GetById(id);
+            var user = await _userService.GetByIdAsync(id);
             if (user == null)
-                return NotFound();
+                return NotFound(new { Message = "User not found." });
 
             return Ok(user);
         }
 
+        // ❌ Delete user by ID
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            _userService.Delete(id);
-            return Ok(new { Message = "User deleted." });
+            var user = await _userService.GetByIdAsync(id);
+            if (user == null)
+                return NotFound(new { Message = "User not found." });
+
+            await _userService.DeleteAsync(id);
+            return Ok(new { Message = "User deleted successfully." });
         }
     }
 }

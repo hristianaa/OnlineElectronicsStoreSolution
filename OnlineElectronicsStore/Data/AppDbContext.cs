@@ -69,6 +69,19 @@ namespace OnlineElectronicsStore.Data
                 new User { Id = 1, FullName = "Admin User", Email = "admin@example.com", Password = "Admin@123", Role = "Admin" },
                 new User { Id = 2, FullName = "John Doe", Email = "john.doe@example.com", Password = "User@123", Role = "User" }
             );
+            // Configure Order ↔ OrderItem relationship
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(o => o.ParentOrder)
+                .WithMany(p => p.OrderItems)
+                .HasForeignKey(o => o.OrderId);
+
+            // Configure OrderItem ↔ Product relationship
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(o => o.Product)
+                .WithMany()
+                .HasForeignKey(o => o.ProductId);
+
         }
     }
+
 }

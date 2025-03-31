@@ -3,12 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Dtos;
+using OnlineElectronicsStore.DTOs;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
-
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -25,37 +24,43 @@ namespace OnlineElectronicsStore.Controllers
             _configuration = configuration;
         }
 
+        // 🔐 LOGIN
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginDto loginDto)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Email == loginDto.Email && u.Password == loginDto.Password);
+            var user = _context.Users.FirstOrDefault(u =>
+                u.Email == loginDto.Email &&
+                u.Password == loginDto.Password);
+
             if (user == null)
-                return Unauthorized("Invalid email or password");
+                return Unauthorized("Invalid email or password.");
 
             var token = GenerateJwtToken(user);
             return Ok(new { token });
         }
 
+        // 🧑 REGISTER
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterDto registerDto)
         {
             if (_context.Users.Any(u => u.Email == registerDto.Email))
-                return BadRequest("User already exists");
+                return BadRequest("User already exists with this email.");
 
-            var user = new User
+            var newUser = new User
             {
                 FullName = registerDto.FullName,
                 Email = registerDto.Email,
                 Password = registerDto.Password,
-                Role = registerDto.Role
+                Role = string.IsNullOrEmpty(registerDto.Role) ? "User" : registerDto.Role
             };
 
-            _context.Users.Add(user);
+            _context.Users.Add(newUser);
             _context.SaveChanges();
 
-            return Ok("User registered successfully");
+            return Ok("User registered successfully.");
         }
 
+        // 🎟 JWT Token Generator
         private string GenerateJwtToken(User user)
         {
             var jwtSettings = _configuration.GetSection("Jwt");
@@ -74,7 +79,7 @@ namespace OnlineElectronicsStore.Controllers
                 issuer: jwtSettings["Issuer"],
                 audience: jwtSettings["Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings["ExpiresInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(Convert.ToDouble(jwtSettings["ExpiresInMinutes"])),
                 signingCredentials: creds
             );
 

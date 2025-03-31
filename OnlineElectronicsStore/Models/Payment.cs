@@ -28,6 +28,8 @@ namespace OnlineElectronicsStore.Models
         public string Status { get; set; } = "Pending"; // Default to "Pending" if not set
 
         // This property calculates whether the payment is "Paid"
-        public bool IsPaid => Status == "Paid";  // Only check "Paid" status
+        public bool IsPaid { get; set; }
+        
+            
     }
 }
