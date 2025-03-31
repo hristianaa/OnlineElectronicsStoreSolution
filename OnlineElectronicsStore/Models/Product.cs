@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OnlineElectronicsStore.Models
 {
@@ -6,24 +7,25 @@ namespace OnlineElectronicsStore.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Product name is required.")]
+        [Required]
+        [MaxLength(100)]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "Description is required.")]
+        [Required]
+        [MaxLength(500)]
         public string Description { get; set; }
 
-        [Required(ErrorMessage = "Price is required.")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than zero.")]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Price must be a positive value.")]
         public decimal Price { get; set; }
 
-        [Required(ErrorMessage = "Stock quantity is required.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Stock must be at least 1.")]
+        [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative.")]
         public int Stock { get; set; }
 
-        [Required(ErrorMessage = "CategoryId is required.")]
-        public int CategoryId { get; set; }   // ✅ Correct Property
+        public int CategoryId { get; set; }
 
-        // Navigation Property (Optional for Data Relationships - Exclude in POST)
-        public Category? Category { get; set; }  // Changed to nullable
+        [ForeignKey("CategoryId")]
+        public Category Category { get; set; }  // Assuming Category is a separate class
+
+        // You can also add other properties like ImageUrl, Ratings, etc. if required.
     }
 }

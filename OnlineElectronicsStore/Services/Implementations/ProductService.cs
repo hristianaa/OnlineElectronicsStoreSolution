@@ -18,7 +18,7 @@ namespace OnlineElectronicsStore.Services
             _context = context;
         }
 
-        // Get all products, including the category information
+        // Get all products including category information
         public async Task<IEnumerable<Product>> GetAllProducts()
         {
             return await _context.Products
@@ -26,7 +26,7 @@ namespace OnlineElectronicsStore.Services
                                  .ToListAsync();
         }
 
-        // Get a product by its ID, including its category
+        // Get a product by its ID
         public async Task<Product?> GetById(int id)
         {
             var product = await _context.Products
@@ -35,14 +35,13 @@ namespace OnlineElectronicsStore.Services
 
             if (product == null)
             {
-                // Optionally log this error or throw a custom exception
                 throw new KeyNotFoundException($"Product with ID {id} not found.");
             }
 
             return product;
         }
 
-        // Search for products by keyword (name or description)
+        // Search products by keyword in name or description
         public async Task<IEnumerable<Product>> Search(string keyword)
         {
             if (string.IsNullOrEmpty(keyword))
@@ -64,7 +63,7 @@ namespace OnlineElectronicsStore.Services
                 throw new ArgumentNullException(nameof(product), "Product cannot be null.");
             }
 
-            // Optional: You can validate the product before saving
+            // Validate the product using DataAnnotations
             ValidateProduct(product);
 
             _context.Products.Add(product);
@@ -92,7 +91,7 @@ namespace OnlineElectronicsStore.Services
             await _context.SaveChangesAsync();
         }
 
-        // Delete a product from the database
+        // Delete a product by ID
         public async Task DeleteProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -105,7 +104,7 @@ namespace OnlineElectronicsStore.Services
             await _context.SaveChangesAsync();
         }
 
-        // Validate product properties
+        // Validate the product using DataAnnotations
         private void ValidateProduct(Product product)
         {
             var validationContext = new ValidationContext(product);

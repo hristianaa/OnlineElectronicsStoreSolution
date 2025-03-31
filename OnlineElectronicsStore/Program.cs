@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OnlineElectronicsStore.Data;
+using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
