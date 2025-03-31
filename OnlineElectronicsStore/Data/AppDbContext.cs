@@ -19,10 +19,20 @@ namespace OnlineElectronicsStore.Data
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // Seeding sample data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Seed Categories
+            // 🧠 Relationships
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(o => o.ParentOrder)
+                .WithMany(p => p.OrderItems)
+                .HasForeignKey(o => o.OrderId);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(o => o.Product)
+                .WithMany()
+                .HasForeignKey(o => o.ProductId);
+
+            // 📦 Seed Categories
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Laptops" },
                 new Category { Id = 2, Name = "PC Components" },
@@ -32,7 +42,7 @@ namespace OnlineElectronicsStore.Data
                 new Category { Id = 6, Name = "Gaming Accessories" }
             );
 
-            // Seed Products
+            // 🖥️ Seed Products
             modelBuilder.Entity<Product>().HasData(
                 new Product { Id = 1, Name = "Gaming Laptop", Description = "Powerful laptop designed for high-performance gaming.", Price = 1200, Stock = 15, CategoryId = 1 },
                 new Product { Id = 2, Name = "Business Laptop", Description = "Lightweight laptop designed for business professionals.", Price = 950, Stock = 20, CategoryId = 1 },
@@ -58,30 +68,31 @@ namespace OnlineElectronicsStore.Data
                 new Product { Id = 17, Name = "RGB Mousepad", Description = "Customizable RGB mousepad for gamers.", Price = 30, Stock = 80, CategoryId = 6 }
             );
 
-            // Seed Discounts
+            // 🏷️ Seed Discounts
             modelBuilder.Entity<Discount>().HasData(
                 new Discount { Id = 1, DiscountCode = "WELCOME10", DiscountAmount = 10.00M, ExpiryDate = new DateTime(2025, 12, 31), ProductId = 1 },
                 new Discount { Id = 2, DiscountCode = "SUMMER20", DiscountAmount = 20.00M, ExpiryDate = new DateTime(2025, 06, 30), ProductId = 3 }
             );
 
-            // Seed Users
+            // 👥 Seed Users (ensure constructor matches model)
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, FullName = "Admin User", Email = "admin@example.com", Password = "Admin@123", Role = "Admin" },
-                new User { Id = 2, FullName = "John Doe", Email = "john.doe@example.com", Password = "User@123", Role = "User" }
+                new User
+                {
+                    Id = 1,
+                    FullName = "Admin User",
+                    Email = "admin@example.com",
+                    Password = "Admin@123",
+                    Role = "Admin"
+                },
+                new User
+                {
+                    Id = 2,
+                    FullName = "John Doe",
+                    Email = "john.doe@example.com",
+                    Password = "User@123",
+                    Role = "User"
+                }
             );
-            // Configure Order ↔ OrderItem relationship
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.ParentOrder)
-                .WithMany(p => p.OrderItems)
-                .HasForeignKey(o => o.OrderId);
-
-            // Configure OrderItem ↔ Product relationship
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.Product)
-                .WithMany()
-                .HasForeignKey(o => o.ProductId);
-
         }
     }
-
 }
