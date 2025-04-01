@@ -19,20 +19,9 @@ namespace OnlineElectronicsStore.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public IActionResult Get()
         {
-            if (pageNumber <= 0 || pageSize <= 0)
-                return BadRequest(new { Message = "Invalid pagination values." });
-
-            var products = await _context.Products
-                                         .Skip((pageNumber - 1) * pageSize)
-                                         .Take(pageSize)
-                                         .ToListAsync();
-
-            if (!products.Any())
-                return NotFound(new { Message = "No products found." });
-
-            return Ok(products);
+            return Ok("The API is working!");
         }
 
         [AllowAnonymous]
@@ -101,4 +90,3 @@ namespace OnlineElectronicsStore.Controllers
         }
     }
 }
-
