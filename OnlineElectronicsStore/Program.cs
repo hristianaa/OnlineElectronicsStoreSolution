@@ -6,6 +6,8 @@ using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
+using Microsoft.OpenApi.Models;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,14 +87,14 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Middleware
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
-{
+
+
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
     });
-}
+
 
 app.UseStaticFiles();
 
