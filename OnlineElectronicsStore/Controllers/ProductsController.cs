@@ -17,24 +17,20 @@ namespace OnlineElectronicsStore.Controllers
             _context = context;
         }
 
+        // ✅ Publicly accessible: Get all products
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> Get()
         {
-            if (pageNumber <= 0 || pageSize <= 0)
-                return BadRequest(new { Message = "Invalid pagination values." });
+            var products = await _context.Products.ToListAsync();
 
-            var products = await _context.Products
-                                         .Skip((pageNumber - 1) * pageSize)
-                                         .Take(pageSize)
-                                         .ToListAsync();
-
-            if (!products.Any())
-                return NotFound(new { Message = "No products found." });
+            if (products == null || products.Count == 0)
+                return NotFound(new { Message = "No products available." });
 
             return Ok(products);
         }
 
+        // ✅ Get single product by ID
         [AllowAnonymous]
         [HttpGet("{id}")]
         public async Task<ActionResult<Product>> GetProduct(int id)
@@ -46,12 +42,13 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(product);
         }
 
+        // ✅ Add a new product (Admin only)
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<ActionResult<Product>> PostProduct([FromBody] Product product)
         {
             if (product == null || !ModelState.IsValid)
-                return BadRequest(ModelState);
+                return BadRequest(new { Message = "Invalid product data." });
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
@@ -59,6 +56,7 @@ namespace OnlineElectronicsStore.Controllers
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
+        // ✅ Update product (Admin only)
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProduct(int id, [FromBody] Product product)
@@ -86,6 +84,7 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(new { Message = "Product updated successfully." });
         }
 
+        // ✅ Delete product (Admin only)
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
@@ -101,4 +100,3 @@ namespace OnlineElectronicsStore.Controllers
         }
     }
 }
-

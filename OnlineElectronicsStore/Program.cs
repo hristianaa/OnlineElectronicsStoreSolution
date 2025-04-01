@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
@@ -9,7 +10,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Register services
+// 🛠 Register services
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -19,14 +20,9 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
-// Load JWT settings
+// 🔐 JWT config
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
-// Register DbContext
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Register JWT authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -48,25 +44,34 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Allow frontend
+// 🌐 Enable CORS for local + deployed frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:7253")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        policy.WithOrigins(
+            "http://localhost:3000", // React dev server
+            "https://onlineelectronicsstoresolution.onrender.com" // Render frontend
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
-// Controllers + Swagger
+// 📦 Database
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// 📘 Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 var app = builder.Build();
 
-// Apply migrations on startup
+// 🧱 Run migrations
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -81,22 +86,19 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Middleware
-if (app.Environment.IsDevelopment())
+// 🧩 Middleware
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
+});
 
+app.UseStaticFiles();
 app.UseHttpsRedirection();
-app.UseCors("AllowReactApp");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.Urls.Add("http://*:80"); //
+app.Urls.Add("http://*:80");
 
-// ✅ RUN WITH HOST + PORT REQUIRED BY RENDER
 app.Run("http://0.0.0.0:80");
