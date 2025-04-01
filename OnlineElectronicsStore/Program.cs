@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OnlineElectronicsStore.Data;
@@ -7,17 +7,19 @@ using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
 
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Register services
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IDiscountService, DiscountService>();
+builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
-
-
-
-
-// Load JWT settings from configuration
+// Load JWT settings
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 // Register DbContext
@@ -46,35 +48,25 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Add CORS policy to allow frontend requests
+// Allow frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:7253") // Update to your frontend URL
+        policy.WithOrigins("http://localhost:7253")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
 });
 
-// Add controllers and Swagger
+// Controllers + Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICartService, CartService>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddScoped<IDiscountService, DiscountService>();
-builder.Services.AddScoped<ICheckoutService, CheckoutService>();
-
-
 
 var app = builder.Build();
 
-// Run migrations on startup
+// Apply migrations on startup
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -89,7 +81,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Middleware pipeline
+// Middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -100,12 +92,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseCors("AllowReactApp");
-
-app.UseAuthentication(); // ?? JWT auth
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-//  Triggering CI/CD from VS Terminal
-app.Run();
+
+// ✅ RUN WITH HOST + PORT REQUIRED BY RENDER
+app.Run("http://0.0.0.0:80");
