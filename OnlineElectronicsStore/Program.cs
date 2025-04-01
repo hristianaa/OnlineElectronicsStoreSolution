@@ -94,13 +94,15 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     });
 }
 
+app.UseStaticFiles();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.Urls.Add("http://*:80"); //
+app.Urls.Add("http://*:80"); 
+//
 
 // ✅ RUN WITH HOST + PORT REQUIRED BY RENDER
 app.Run("http://0.0.0.0:80");
