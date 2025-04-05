@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace OnlineElectronicsStore.Data
 {

@@ -120,7 +120,7 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
@@ -137,7 +137,7 @@ namespace OnlineElectronicsStore.Migrations
                             Id = 1,
                             DiscountAmount = 10.00m,
                             DiscountCode = "WELCOME10",
-                            ExpiryDate = new DateTime(2025, 12, 31, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ExpiryDate = new DateTime(2025, 12, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             ProductId = 1
                         },
                         new
@@ -145,7 +145,7 @@ namespace OnlineElectronicsStore.Migrations
                             Id = 2,
                             DiscountAmount = 20.00m,
                             DiscountCode = "SUMMER20",
-                            ExpiryDate = new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
+                            ExpiryDate = new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Utc),
                             ProductId = 3
                         });
                 });
@@ -163,7 +163,7 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("InvoiceDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
@@ -187,7 +187,7 @@ namespace OnlineElectronicsStore.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -253,7 +253,7 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("PaymentDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()

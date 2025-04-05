@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OnlineElectronicsStore.Models
 {
@@ -12,14 +14,14 @@ namespace OnlineElectronicsStore.Models
         public User User { get; set; }
 
         [Required]
-        public DateTime OrderDate { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime OrderDate { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
         [Required]
         public string Status { get; set; }
 
-        // Navigation Property
         public ICollection<CartItem> CartItems { get; set; }
-        
+
         public decimal TotalAmount { get; set; }
 
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

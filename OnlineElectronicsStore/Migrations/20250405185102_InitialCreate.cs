@@ -73,7 +73,7 @@ namespace OnlineElectronicsStore.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     UserId = table.Column<int>(type: "integer", nullable: false),
-                    OrderDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    OrderDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "numeric", nullable: false)
                 },
@@ -96,7 +96,7 @@ namespace OnlineElectronicsStore.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     DiscountCode = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     DiscountAmount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    ExpiryDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    ExpiryDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     ProductId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -205,7 +205,7 @@ namespace OnlineElectronicsStore.Migrations
                     OrderId = table.Column<int>(type: "integer", nullable: false),
                     TotalAmount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
                     BillingEmail = table.Column<string>(type: "text", nullable: false),
-                    InvoiceDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    InvoiceDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -254,7 +254,7 @@ namespace OnlineElectronicsStore.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     OrderId = table.Column<int>(type: "integer", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    PaymentDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "timestamp without time zone", nullable: false),
                     Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     IsPaid = table.Column<bool>(type: "boolean", nullable: false)
                 },
@@ -343,8 +343,8 @@ namespace OnlineElectronicsStore.Migrations
                 columns: new[] { "Id", "DiscountAmount", "DiscountCode", "ExpiryDate", "ProductId" },
                 values: new object[,]
                 {
-                    { 1, 10.00m, "WELCOME10", new DateTime(2025, 12, 31, 0, 0, 0, 0, DateTimeKind.Unspecified), 1 },
-                    { 2, 20.00m, "SUMMER20", new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Unspecified), 3 }
+                    { 1, 10.00m, "WELCOME10", new DateTime(2025, 12, 30, 0, 0, 0, 0, DateTimeKind.Utc), 1 },
+                    { 2, 20.00m, "SUMMER20", new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Utc), 3 }
                 });
 
             migrationBuilder.CreateIndex(

@@ -8,11 +8,9 @@ namespace OnlineElectronicsStore.Models
     {
         public int Id { get; set; }
 
-        // Foreign key relationship with Order
         [Required]
         public int OrderId { get; set; }
 
-        // Navigation property for related Order
         public Order Order { get; set; }
 
         [Required]
@@ -20,16 +18,13 @@ namespace OnlineElectronicsStore.Models
         public decimal Amount { get; set; }
 
         [Required]
-        public DateTime PaymentDate { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
+        public DateTime PaymentDate { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-        // Default Status value (e.g., Pending)
         [Required]
-        [MaxLength(50)] // Limiting the length for the Status field
-        public string Status { get; set; } = "Pending"; // Default to "Pending" if not set
+        [MaxLength(50)]
+        public string Status { get; set; } = "Pending";
 
-        // This property calculates whether the payment is "Paid"
         public bool IsPaid { get; set; }
-        
-            
     }
 }

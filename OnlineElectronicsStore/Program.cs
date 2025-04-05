@@ -7,6 +7,7 @@ using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
