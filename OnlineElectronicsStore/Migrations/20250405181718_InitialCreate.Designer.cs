@@ -12,7 +12,7 @@ using OnlineElectronicsStore.Data;
 namespace OnlineElectronicsStore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250405175955_InitialCreate")]
+    [Migration("20250405181718_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
