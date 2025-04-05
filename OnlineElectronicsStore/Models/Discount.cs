@@ -16,11 +16,10 @@ namespace OnlineElectronicsStore.Models
         [Column(TypeName = "decimal(18, 2)")]
         public decimal DiscountAmount { get; set; }
 
-        // 🛡️ Set default as UtcNow + 30 days to ensure it's UTC
+        // ✅ Removed default DateTime assignment
         [Required]
-        public DateTime ExpiryDate { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(30), DateTimeKind.Utc);
+        public DateTime ExpiryDate { get; set; }
 
-        // 🔗 Foreign Key
         [Required]
         public int ProductId { get; set; }
 

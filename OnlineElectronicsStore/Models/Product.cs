@@ -9,13 +9,14 @@ namespace OnlineElectronicsStore.Models
 
         [Required]
         [MaxLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(500)]
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
         [Range(0.01, double.MaxValue, ErrorMessage = "Price must be a positive value.")]
+        [Column(TypeName = "decimal(18, 2)")]
         public decimal Price { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "Stock cannot be negative.")]
@@ -24,8 +25,7 @@ namespace OnlineElectronicsStore.Models
         public int CategoryId { get; set; }
 
         [ForeignKey("CategoryId")]
-        public Category Category { get; set; }  // Assuming Category is a separate class
-
-        // You can also add other properties like ImageUrl, Ratings, etc. if required.
+        public Category Category { get; set; } = null!;
     }
 }
+

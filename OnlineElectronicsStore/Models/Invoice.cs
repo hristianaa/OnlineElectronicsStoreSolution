@@ -22,6 +22,6 @@ namespace OnlineElectronicsStore.Models
         public string BillingEmail { get; set; } = string.Empty;
 
         [Column(TypeName = "timestamp without time zone")]
-        public DateTime InvoiceDate { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        public DateTime InvoiceDate { get; set; }
     }
 }

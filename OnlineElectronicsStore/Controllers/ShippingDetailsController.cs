@@ -4,9 +4,9 @@ using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using Microsoft.AspNetCore.Authorization;
 
-
 namespace OnlineElectronicsStore.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ShippingDetailsController : ControllerBase
@@ -18,47 +18,77 @@ namespace OnlineElectronicsStore.Controllers
             _context = context;
         }
 
+        // 📦 GET: api/shippingdetails
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ShippingDetails>>> GetShippingDetails()
+        public async Task<IActionResult> GetShippingDetails()
         {
-            return await _context.ShippingDetails.ToListAsync();
+            var details = await _context.ShippingDetails.ToListAsync();
+            return Ok(details);
         }
 
+        // 📦 GET: api/shippingdetails/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ShippingDetails>> GetShippingDetail(int id)
+        public async Task<IActionResult> GetShippingDetail(int id)
         {
-            var shippingDetail = await _context.ShippingDetails.FindAsync(id);
-            if (shippingDetail == null) return NotFound();
-            return shippingDetail;
+            var detail = await _context.ShippingDetails.FindAsync(id);
+            if (detail == null)
+                return NotFound(new { Message = "Shipping detail not found." });
+
+            return Ok(detail);
         }
 
+        // 📦 POST: api/shippingdetails
         [HttpPost]
-        public async Task<ActionResult<ShippingDetails>> PostShippingDetail(ShippingDetails shippingDetail)
+        public async Task<IActionResult> PostShippingDetail([FromBody] ShippingDetails detail)
         {
-            _context.ShippingDetails.Add(shippingDetail);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _context.ShippingDetails.Add(detail);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetShippingDetail), new { id = shippingDetail.Id }, shippingDetail);
+
+            return CreatedAtAction(nameof(GetShippingDetail), new { id = detail.Id }, detail);
         }
 
+        // 📦 PUT: api/shippingdetails/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutShippingDetail(int id, ShippingDetails shippingDetail)
+        public async Task<IActionResult> PutShippingDetail(int id, [FromBody] ShippingDetails detail)
         {
-            if (id != shippingDetail.Id) return BadRequest();
+            if (id != detail.Id)
+                return BadRequest(new { Message = "Shipping detail ID mismatch." });
 
-            _context.Entry(shippingDetail).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            _context.Entry(detail).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.ShippingDetails.AnyAsync(e => e.Id == id))
+                    return NotFound(new { Message = "Shipping detail not found." });
+
+                throw;
+            }
+
+            return Ok(new { Message = "Shipping detail updated successfully." });
         }
 
+        // ❌ DELETE: api/shippingdetails/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteShippingDetail(int id)
         {
-            var shippingDetail = await _context.ShippingDetails.FindAsync(id);
-            if (shippingDetail == null) return NotFound();
+            var detail = await _context.ShippingDetails.FindAsync(id);
+            if (detail == null)
+                return NotFound(new { Message = "Shipping detail not found." });
 
-            _context.ShippingDetails.Remove(shippingDetail);
+            _context.ShippingDetails.Remove(detail);
             await _context.SaveChangesAsync();
-            return NoContent();
+
+            return Ok(new { Message = "Shipping detail deleted successfully." });
         }
     }
 }

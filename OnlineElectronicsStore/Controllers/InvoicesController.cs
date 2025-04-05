@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Helpers;
 using OnlineElectronicsStore.Services.Interfaces;
+using System;
+using System.Threading.Tasks;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -18,7 +20,9 @@ namespace OnlineElectronicsStore.Controllers
             _invoiceService = invoiceService;
         }
 
-        // 📄 GET all invoices
+        /// <summary>
+        /// Get all invoices.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetInvoices()
         {
@@ -26,7 +30,9 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(invoices);
         }
 
-        // 📄 GET single invoice by ID
+        /// <summary>
+        /// Get a specific invoice by ID.
+        /// </summary>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetInvoice(int id)
         {
@@ -37,18 +43,24 @@ namespace OnlineElectronicsStore.Controllers
             return Ok(invoice);
         }
 
-        // 🧾 POST create new invoice
+        /// <summary>
+        /// Create a new invoice.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> CreateInvoice([FromBody] Invoice invoice)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            invoice.InvoiceDate = DateTime.UtcNow;
+
             var created = await _invoiceService.CreateAsync(invoice);
             return CreatedAtAction(nameof(GetInvoice), new { id = created.Id }, created);
         }
 
-        // ❌ DELETE invoice by ID
+        /// <summary>
+        /// Delete an invoice by ID.
+        /// </summary>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteInvoice(int id)
         {
@@ -58,6 +70,10 @@ namespace OnlineElectronicsStore.Controllers
 
             return Ok(new { Message = $"Invoice {id} deleted successfully." });
         }
+
+        /// <summary>
+        /// Download invoice as PDF.
+        /// </summary>
         [HttpGet("{id}/pdf")]
         public async Task<IActionResult> DownloadPdf(int id)
         {
@@ -68,6 +84,5 @@ namespace OnlineElectronicsStore.Controllers
             var pdfBytes = InvoicePdfGenerator.GeneratePdf(invoice);
             return File(pdfBytes, "application/pdf", $"Invoice_{invoice.Id}.pdf");
         }
-
     }
 }

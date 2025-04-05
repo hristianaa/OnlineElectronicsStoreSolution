@@ -15,7 +15,7 @@ namespace OnlineElectronicsStore.Models
 
         [Required]
         [Column(TypeName = "timestamp without time zone")]
-        public DateTime OrderDate { get; set; } = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        public DateTime OrderDate { get; set; }
 
         [Required]
         public string Status { get; set; }

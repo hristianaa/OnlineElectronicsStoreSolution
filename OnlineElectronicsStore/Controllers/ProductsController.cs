@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -17,35 +19,40 @@ namespace OnlineElectronicsStore.Controllers
             _context = context;
         }
 
-        // ✅ Publicly accessible: Get all products
+        /// <summary>
+        /// Get all products (public).
+        /// </summary>
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> Get()
         {
-            var products = await _context.Products.ToListAsync();
-
+            var products = await _context.Products.Include(p => p.Category).ToListAsync();
             if (products == null || products.Count == 0)
                 return NotFound(new { Message = "No products available." });
 
             return Ok(products);
         }
 
-        // ✅ Get single product by ID
+        /// <summary>
+        /// Get product by ID (public).
+        /// </summary>
         [AllowAnonymous]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        public async Task<IActionResult> GetProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _context.Products.Include(p => p.Category).FirstOrDefaultAsync(p => p.Id == id);
             if (product == null)
                 return NotFound(new { Message = "Product not found." });
 
             return Ok(product);
         }
 
-        // ✅ Add a new product (Admin only)
+        /// <summary>
+        /// Create a new product (admin only).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct([FromBody] Product product)
+        public async Task<IActionResult> PostProduct([FromBody] Product product)
         {
             if (product == null || !ModelState.IsValid)
                 return BadRequest(new { Message = "Invalid product data." });
@@ -56,7 +63,9 @@ namespace OnlineElectronicsStore.Controllers
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
         }
 
-        // ✅ Update product (Admin only)
+        /// <summary>
+        /// Update product (admin only).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProduct(int id, [FromBody] Product product)
@@ -75,16 +84,18 @@ namespace OnlineElectronicsStore.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!_context.Products.Any(e => e.Id == id))
+                if (!await _context.Products.AnyAsync(p => p.Id == id))
                     return NotFound(new { Message = "Product not found." });
-                else
-                    throw;
+
+                throw;
             }
 
             return Ok(new { Message = "Product updated successfully." });
         }
 
-        // ✅ Delete product (Admin only)
+        /// <summary>
+        /// Delete product (admin only).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)

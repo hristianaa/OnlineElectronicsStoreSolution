@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Models;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 using System;
 
 namespace OnlineElectronicsStore.Data
@@ -24,18 +23,7 @@ namespace OnlineElectronicsStore.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // 🧠 Relationships
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.ParentOrder)
-                .WithMany(p => p.OrderItems)
-                .HasForeignKey(o => o.OrderId);
-
-            modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.Product)
-                .WithMany()
-                .HasForeignKey(o => o.ProductId);
-
-            // 📦 Categories
+            // 📦 Category Seeding
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Laptops" },
                 new Category { Id = 2, Name = "PC Components" },
@@ -45,7 +33,7 @@ namespace OnlineElectronicsStore.Data
                 new Category { Id = 6, Name = "Gaming Accessories" }
             );
 
-            // 🖥️ Products
+            // 🖥️ Product Seeding
             modelBuilder.Entity<Product>().HasData(
                 new Product { Id = 1, Name = "Gaming Laptop", Description = "Powerful laptop designed for high-performance gaming.", Price = 1200, Stock = 15, CategoryId = 1 },
                 new Product { Id = 2, Name = "Business Laptop", Description = "Lightweight laptop designed for business professionals.", Price = 950, Stock = 20, CategoryId = 1 },
@@ -66,7 +54,7 @@ namespace OnlineElectronicsStore.Data
                 new Product { Id = 17, Name = "RGB Mousepad", Description = "Customizable RGB mousepad for gamers.", Price = 30, Stock = 80, CategoryId = 6 }
             );
 
-            // 🏷️ Discounts (fix: ensure Utc kind + set DB column type explicitly)
+            // 🎁 Discounts (safe DateTime)
             modelBuilder.Entity<Discount>()
                 .Property(d => d.ExpiryDate)
                 .HasColumnType("timestamp without time zone");
@@ -77,7 +65,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 1,
                     DiscountCode = "WELCOME10",
                     DiscountAmount = 10.00M,
-                    ExpiryDate = DateTime.SpecifyKind(new DateTime(2025, 12, 30), DateTimeKind.Utc),
+                    ExpiryDate = DateTime.SpecifyKind(new DateTime(2025, 12, 30, 0, 0, 0), DateTimeKind.Unspecified),
                     ProductId = 1
                 },
                 new Discount
@@ -85,7 +73,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 2,
                     DiscountCode = "SUMMER20",
                     DiscountAmount = 20.00M,
-                    ExpiryDate = DateTime.SpecifyKind(new DateTime(2025, 6, 30), DateTimeKind.Utc),
+                    ExpiryDate = DateTime.SpecifyKind(new DateTime(2025, 6, 30, 0, 0, 0), DateTimeKind.Unspecified),
                     ProductId = 3
                 }
             );
@@ -110,18 +98,32 @@ namespace OnlineElectronicsStore.Data
                 }
             );
 
-            // 🕓 Global DateTime formatting
+            // 🔁 Relationships
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.ParentOrder)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId);
+
+            modelBuilder.Entity<OrderItem>()
+                .HasOne(oi => oi.Product)
+                .WithMany()
+                .HasForeignKey(oi => oi.ProductId);
+
+            // 🕓 Date column setup
             modelBuilder.Entity<Order>()
                 .Property(o => o.OrderDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("timestamp without time zone")
+                .HasDefaultValueSql("NOW()");
 
             modelBuilder.Entity<Payment>()
                 .Property(p => p.PaymentDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("timestamp without time zone")
+                .HasDefaultValueSql("NOW()");
 
             modelBuilder.Entity<Invoice>()
                 .Property(i => i.InvoiceDate)
-                .HasColumnType("timestamp without time zone");
+                .HasColumnType("timestamp without time zone")
+                .HasDefaultValueSql("NOW()");
         }
     }
 }

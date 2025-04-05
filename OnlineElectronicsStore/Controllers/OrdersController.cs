@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Security.Claims;
+using System;
+using System.Threading.Tasks;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -18,60 +20,62 @@ namespace OnlineElectronicsStore.Controllers
             _orderService = orderService;
         }
 
-        // 📦 GET: api/orders (Admin only)
+        /// <summary>
+        /// Get all orders (Admin only).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
             var orders = await _orderService.GetAllAsync();
-            if (!orders.Any())
-                return NotFound(new { Message = "No orders found." });
-
-            return Ok(orders);
+            return orders.Any() ? Ok(orders) : NotFound(new { Message = "No orders found." });
         }
 
-        // 📄 GET: api/orders/{id}
+        /// <summary>
+        /// Get a single order by ID.
+        /// </summary>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrder(int id)
         {
             var order = await _orderService.GetByIdAsync(id);
-            if (order == null)
-                return NotFound(new { Message = "Order not found." });
-
-            return Ok(order);
+            return order != null ? Ok(order) : NotFound(new { Message = "Order not found." });
         }
 
-        // 🧾 GET: api/orders/history
+        /// <summary>
+        /// Get the authenticated user's order history.
+        /// </summary>
         [HttpGet("history")]
         public async Task<IActionResult> GetOrderHistory()
         {
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
-            var userOrders = await _orderService.GetByUserIdAsync(userId);
-
-            if (!userOrders.Any())
-                return NotFound(new { Message = "No orders found for your account." });
-
-            return Ok(userOrders);
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+            var orders = await _orderService.GetByUserIdAsync(userId);
+            return orders.Any() ? Ok(orders) : NotFound(new { Message = "No orders found for your account." });
         }
 
-        // 🛒 POST: api/orders
+        /// <summary>
+        /// Create a new order.
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> PostOrder([FromBody] Order order)
         {
-            if (order == null || !ModelState.IsValid)
-                return BadRequest(new { Message = "Invalid order data." });
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
+            order.OrderDate = DateTime.UtcNow;
             await _orderService.CreateAsync(order);
+
             return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
         }
 
-        // ❌ DELETE: api/orders/{id} (Admin only)
+        /// <summary>
+        /// Delete an order by ID (Admin only).
+        /// </summary>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteOrder(int id)
         {
-            var existing = await _orderService.GetByIdAsync(id);
-            if (existing == null)
+            var order = await _orderService.GetByIdAsync(id);
+            if (order == null)
                 return NotFound(new { Message = "Order not found." });
 
             await _orderService.DeleteAsync(id);
@@ -79,4 +83,3 @@ namespace OnlineElectronicsStore.Controllers
         }
     }
 }
-

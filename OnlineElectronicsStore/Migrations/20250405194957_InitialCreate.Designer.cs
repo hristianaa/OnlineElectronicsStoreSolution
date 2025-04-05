@@ -12,7 +12,7 @@ using OnlineElectronicsStore.Data;
 namespace OnlineElectronicsStore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250405190827_InitialCreate")]
+    [Migration("20250405194957_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -140,7 +140,7 @@ namespace OnlineElectronicsStore.Migrations
                             Id = 1,
                             DiscountAmount = 10.00m,
                             DiscountCode = "WELCOME10",
-                            ExpiryDate = new DateTime(2025, 12, 30, 0, 0, 0, 0, DateTimeKind.Utc),
+                            ExpiryDate = new DateTime(2025, 12, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ProductId = 1
                         },
                         new
@@ -148,7 +148,7 @@ namespace OnlineElectronicsStore.Migrations
                             Id = 2,
                             DiscountAmount = 20.00m,
                             DiscountCode = "SUMMER20",
-                            ExpiryDate = new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Utc),
+                            ExpiryDate = new DateTime(2025, 6, 30, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             ProductId = 3
                         });
                 });
@@ -166,7 +166,9 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("InvoiceDate")
-                        .HasColumnType("timestamp without time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
@@ -190,7 +192,9 @@ namespace OnlineElectronicsStore.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("OrderDate")
-                        .HasColumnType("timestamp without time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -256,7 +260,9 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("PaymentDate")
-                        .HasColumnType("timestamp without time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasDefaultValueSql("NOW()");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -292,7 +298,7 @@ namespace OnlineElectronicsStore.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<decimal>("Price")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<int>("Stock")
                         .HasColumnType("integer");
