@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace OnlineElectronicsStore.Models
 {
@@ -25,7 +26,7 @@ namespace OnlineElectronicsStore.Models
         public int CategoryId { get; set; }
 
         [ForeignKey("CategoryId")]
+        [JsonIgnore] // 🔥 Fixes the object cycle issue
         public Category Category { get; set; } = null!;
     }
 }
-
