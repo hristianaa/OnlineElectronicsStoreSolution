@@ -12,94 +12,143 @@ using Npgsql.EntityFrameworkCore.PostgreSQL;
 var builder = WebApplication.CreateBuilder(args);
 
 // 🛠 Register services
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<ICartService, CartService>();
-builder.Services.AddScoped<IInvoiceService, InvoiceService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddScoped<IDiscountService, DiscountService>();
-builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+ConfigureServices(builder.Services, builder.Configuration);
 
-// 🔐 JWT config
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
-    };
-});
-
-builder.Services.AddAuthorization();
-
-// 🌐 Enable CORS for local + deployed frontend
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:3000", // React dev server
-            "https://onlineelectronicsstoresolution.onrender.com" // Render frontend
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
-});
-
-// 📦 Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// 📘 Swagger
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
-
-var app = builder.Build();
+var app = builder.Build(); // This initializes the app variable
 
 // 🧱 Run migrations
-using (var scope = app.Services.CreateScope())
+RunMigrations(app);
+
+// 🧩 Middleware configuration
+ConfigureMiddleware(app);
+
+app.Run("http://0.0.0.0:80");
+
+#region Helper Methods
+
+// 📦 Configuring services
+void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
+    // 🔐 JWT config
+    var jwtSettings = configuration.GetSection("Jwt");
+
+    services.AddAuthentication(options =>
     {
-        dbContext.Database.Migrate();
-    }
-    catch (Exception ex)
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
     {
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        };
+    });
+
+    services.AddAuthorization();
+
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowFrontend", policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:3000",  // React dev server
+                "https://onlineelectronicsstoresolution.onrender.com" // Render frontend
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        });
+    });
+
+    app.UseCors("AllowFrontend");
+
+    // 📦 Database configuration
+    services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+    // 🧰 Dependency Injection for Services
+    services.AddScoped<IProductService, ProductService>();
+    services.AddScoped<IOrderService, OrderService>();
+    services.AddScoped<IUserService, UserService>();
+    services.AddScoped<ICartService, CartService>();
+    services.AddScoped<IInvoiceService, InvoiceService>();
+    services.AddScoped<IPaymentService, PaymentService>();
+    services.AddScoped<IDiscountService, DiscountService>();
+    services.AddScoped<ICheckoutService, CheckoutService>();
+
+    // 📘 Swagger configuration
+    services.AddControllers();
+    services.AddEndpointsApiExplorer();
+    services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "Online Electronics Store API", Version = "v1" });
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            In = ParameterLocation.Header,
+            Description = "Please enter a valid JWT token",
+            Name = "Authorization",
+            Type = SecuritySchemeType.ApiKey
+        });
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
+            {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] {}
+            }
+        });
+    });
+
+    services.AddLogging(builder => builder.ClearProviders().AddConsole());
+}
+
+// 🧱 Run migrations method
+void RunMigrations(WebApplication app)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            dbContext.Database.Migrate();
+            logger.LogInformation("Database migration completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while migrating the database.");
+        }
     }
 }
 
-// 🧩 Middleware
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// 🧩 Middleware configuration
+void ConfigureMiddleware(WebApplication app)
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
+    });
 
-app.UseStaticFiles();
-app.UseHttpsRedirection();
-app.UseCors("AllowFrontend");
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Urls.Add("http://*:80");
+    app.UseStaticFiles();
+    app.UseHttpsRedirection();
+    app.UseCors("AllowFrontend");
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+}
+#endregion
 
-app.Run("http://0.0.0.0:80");
