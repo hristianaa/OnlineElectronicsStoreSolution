@@ -53,21 +53,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 
     services.AddAuthorization();
 
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy("AllowFrontend", policy =>
-        {
-            policy.WithOrigins(
-                "http://localhost:3000",  // React dev server
-                "https://onlineelectronicsstoresolution.onrender.com" // Render frontend
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-        });
-    });
-
-    app.UseCors("AllowFrontend");
-
     // 📦 Database configuration
     services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
@@ -81,6 +66,20 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddScoped<IPaymentService, PaymentService>();
     services.AddScoped<IDiscountService, DiscountService>();
     services.AddScoped<ICheckoutService, CheckoutService>();
+
+    // 🧭 CORS Policy
+    services.AddCors(options =>
+    {
+        options.AddPolicy("AllowFrontend", policy =>
+        {
+            policy.WithOrigins(
+                "http://localhost:3000",
+                "https://onlineelectronicsstoresolution.onrender.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        });
+    });
 
     // 📘 Swagger configuration
     services.AddControllers();
@@ -144,11 +143,11 @@ void ConfigureMiddleware(WebApplication app)
     });
 
     app.UseStaticFiles();
-    app.UseHttpsRedirection();
     app.UseCors("AllowFrontend");
+    app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapControllers();
 }
-#endregion
 
+#endregion
