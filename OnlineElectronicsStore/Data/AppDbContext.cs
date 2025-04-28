@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Models;
 using System;
+using Microsoft.AspNetCore.Identity;
 
 namespace OnlineElectronicsStore.Data
 {
@@ -23,6 +24,7 @@ namespace OnlineElectronicsStore.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            var hasher = new Microsoft.AspNetCore.Identity.PasswordHasher<User>();
             // 📦 Category Seeding
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Laptops" },
@@ -85,7 +87,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 1,
                     FullName = "Admin User",
                     Email = "admin@example.com",
-                    Password = "Admin@123",
+                    Password = hasher.HashPassword(null, "Admin@123"), // 🔥 Now hashed!
                     Role = "Admin"
                 },
                 new User
@@ -93,7 +95,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 2,
                     FullName = "John Doe",
                     Email = "john.doe@example.com",
-                    Password = "User@123",
+                    Password = hasher.HashPassword(null, "User@123"), // 🔥 Now hashed!
                     Role = "User"
                 }
             );

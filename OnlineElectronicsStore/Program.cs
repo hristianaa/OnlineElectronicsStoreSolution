@@ -7,58 +7,26 @@ using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
 using System.Text;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 🛠 Register services
 ConfigureServices(builder.Services, builder.Configuration);
 
-
-void RunMigrations(WebApplication app)
-{
-    using (var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
-        try
-        {
-            dbContext.Database.Migrate();
-            logger.LogInformation("Database migration completed successfully.");
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "An error occurred while migrating the database.");
-        }
-    }
-}
-
-// 🧩 Middleware configuration 
-void ConfigureMiddleware(WebApplication app)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
-    });
-
-    app.UseStaticFiles();
-    app.UseCors("AllowFrontend");
-    app.UseHttpsRedirection();
-    app.UseAuthentication();
-    app.UseAuthorization();
-    app.MapControllers();
-}
-
+// Build app
 var app = builder.Build();
 
+// Run database migrations
 RunMigrations(app);
+
+// 🧩 Middleware configuration
 ConfigureMiddleware(app);
 
+// Start application
 app.Run("http://0.0.0.0:80");
 
-//  Configuring services
+// -------------------- Functions ---------------------
+
 void ConfigureServices(IServiceCollection services, IConfiguration configuration)
 {
     var jwtSettings = configuration.GetSection("Jwt");
@@ -96,13 +64,14 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddScoped<IDiscountService, DiscountService>();
     services.AddScoped<ICheckoutService, CheckoutService>();
 
+    // ✅ CORRECT CORS POLICY
     services.AddCors(options =>
     {
         options.AddPolicy("AllowFrontend", policy =>
         {
             policy.WithOrigins(
                 "http://localhost:3000",
-                "https://onlineelectronicsstoresolution.onrender.com"
+                "https://resplendent-tartufo-7a651a.netlify.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -138,4 +107,42 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     });
 
     services.AddLogging(builder => builder.ClearProviders().AddConsole());
+}
+
+void ConfigureMiddleware(WebApplication app)
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
+    });
+
+    app.UseStaticFiles();
+
+    // ✅ Apply CORS early
+    app.UseCors("AllowFrontend");
+
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+}
+
+void RunMigrations(WebApplication app)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+        try
+        {
+            dbContext.Database.Migrate();
+            logger.LogInformation("Database migration completed successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while migrating the database.");
+        }
+    }
 }
