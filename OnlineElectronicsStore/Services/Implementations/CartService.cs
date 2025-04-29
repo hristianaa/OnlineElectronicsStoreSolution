@@ -1,8 +1,13 @@
 ﻿using OnlineElectronicsStore.Data;
-using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Services.Interfaces;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.DTOs;
+using OnlineElectronicsStore.Services.Interfaces;
+using OnlineElectronicsStore.Models;  // if you have CartItem model
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
 
 namespace OnlineElectronicsStore.Services.Implementations
 {
@@ -15,60 +20,34 @@ namespace OnlineElectronicsStore.Services.Implementations
             _context = context;
         }
 
-        // Sync methods
-        public IEnumerable<CartItem> GetCartItems(int userId)
+        public async Task<CartDto> GetCartAsync(int userId)
         {
-            return _context.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == userId)
-                .ToList();
-        }
+            var cartItems = await _context.CartItems
+                .Include(ci => ci.Product)
+                .Where(ci => ci.UserId == userId)
+                .ToListAsync();
 
-        public CartItem? GetCartItemById(int id)
-        {
-            return _context.CartItems
-                .Include(c => c.Product)
-                .FirstOrDefault(c => c.Id == id);
-        }
-
-        public void AddToCart(CartItem item)
-        {
-            _context.CartItems.Add(item);
-            _context.SaveChanges();
-        }
-
-        public void UpdateCartItem(CartItem item)
-        {
-            _context.CartItems.Update(item);
-            _context.SaveChanges();
-        }
-
-        public void RemoveFromCart(int id)
-        {
-            var item = _context.CartItems.Find(id);
-            if (item != null)
+            var dto = new CartDto
             {
-                _context.CartItems.Remove(item);
-                _context.SaveChanges();
-            }
+                Items = cartItems.Select(ci => new CartItemDto
+                {
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                }).ToList(),
+                TotalPrice = cartItems.Sum(ci => ci.Quantity * ci.Product.Price)
+            };
+
+            return dto;
         }
 
-        public void ClearCart(int userId)
-        {
-            var items = _context.CartItems.Where(c => c.UserId == userId);
-            _context.CartItems.RemoveRange(items);
-            _context.SaveChanges();
-        }
-
-        // Async methods for API use
-
-        public async Task<bool> AddToCartAsync(CartItemDto item)
+        public async Task<bool> AddToCartAsync(CartItemDto item, int userId)
         {
             var product = await _context.Products.FindAsync(item.ProductId);
-            if (product == null) return false;
+            if (product == null)
+                return false;
 
             var cartItem = await _context.CartItems
-                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == 1); // TEMP userId
+                .FirstOrDefaultAsync(ci => ci.ProductId == item.ProductId && ci.UserId == userId);
 
             if (cartItem != null)
             {
@@ -80,7 +59,7 @@ namespace OnlineElectronicsStore.Services.Implementations
                 {
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    UserId = 1 // TEMP userId
+                    UserId = userId
                 };
                 _context.CartItems.Add(cartItem);
             }
@@ -89,39 +68,27 @@ namespace OnlineElectronicsStore.Services.Implementations
             return true;
         }
 
-        public async Task<bool> RemoveFromCartAsync(CartItemDto item)
+        public async Task<bool> RemoveFromCartAsync(int productId, int userId)
         {
             var cartItem = await _context.CartItems
-                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == 1); // TEMP userId
+                .FirstOrDefaultAsync(ci => ci.ProductId == productId && ci.UserId == userId);
 
-            if (cartItem != null)
-            {
-                _context.CartItems.Remove(cartItem);
-                await _context.SaveChangesAsync();
-                return true;
-            }
+            if (cartItem == null)
+                return false;
 
-            return false;
+            _context.CartItems.Remove(cartItem);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public async Task<CartDto> GetCartAsync()
+        public async Task ClearCartAsync(int userId)
         {
-            var items = await _context.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == 1) // TEMP userId
+            var cartItems = await _context.CartItems
+                .Where(ci => ci.UserId == userId)
                 .ToListAsync();
 
-            var dto = new CartDto
-            {
-                Items = items.Select(c => new CartItemDto
-                {
-                    ProductId = c.ProductId,
-                    Quantity = c.Quantity
-                }).ToList(),
-                TotalPrice = items.Sum(c => c.Quantity * c.Product.Price)
-            };
-
-            return dto;
+            _context.CartItems.RemoveRange(cartItems);
+            await _context.SaveChangesAsync();
         }
     }
 }

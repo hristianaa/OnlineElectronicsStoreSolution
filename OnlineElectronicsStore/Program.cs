@@ -19,10 +19,10 @@ var app = builder.Build();
 // Run database migrations
 RunMigrations(app);
 
-// 🧩 Middleware configuration
+// 🧩 Configure middleware
 ConfigureMiddleware(app);
 
-// Start application
+// Start the app
 app.Run("http://0.0.0.0:80");
 
 // -------------------- Functions ---------------------
@@ -64,14 +64,14 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     services.AddScoped<IDiscountService, DiscountService>();
     services.AddScoped<ICheckoutService, CheckoutService>();
 
-    // ✅ CORRECT CORS POLICY
+    // ✅ CORS configuration (ONLY AllowFrontend)
     services.AddCors(options =>
     {
         options.AddPolicy("AllowFrontend", policy =>
         {
             policy.WithOrigins(
                 "http://localhost:3000",
-                "https://resplendent-tartufo-7a651a.netlify.app"
+                "https://onlineelectronicsstoresolution.onrender.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod();
@@ -119,7 +119,7 @@ void ConfigureMiddleware(WebApplication app)
 
     app.UseStaticFiles();
 
-    // ✅ Apply CORS early
+    // ✅ Apply CORS BEFORE Authentication
     app.UseCors("AllowFrontend");
 
     app.UseHttpsRedirection();
