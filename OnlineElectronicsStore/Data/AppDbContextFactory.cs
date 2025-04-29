@@ -16,6 +16,10 @@ namespace OnlineElectronicsStore.Data
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             optionsBuilder.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
+            optionsBuilder.UseSqlServer(
+            "Server=(localdb)\\MSSQLLocalDB;" +
+            "Database=OnlineElectronicsStore;" +
+            "Trusted_Connection=True;");
 
             return new AppDbContext(optionsBuilder.Options);
         }

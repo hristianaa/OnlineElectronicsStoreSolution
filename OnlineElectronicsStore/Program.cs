@@ -60,7 +60,7 @@ builder.Services.AddCors(options =>
 
 // 📦 Database
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 📘 Swagger
 builder.Services.AddControllers();
