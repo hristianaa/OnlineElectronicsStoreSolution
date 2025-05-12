@@ -10,7 +10,7 @@ using OnlineElectronicsStore.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🛠 Application services (keep all your I*Service registrations)
+// 🛠 DI registrations
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -20,30 +20,26 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
-// 🔐 Authentication: JWT + Cookies
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-
+// 🔐 Auth: JWT + Cookies
+var jwt = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(options =>
 {
-    // Default to JWT for API calls
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(options =>
+.AddJwtBearer(o =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
+    o.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings["Issuer"],
-        ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-                                      Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        ValidIssuer = jwt["Issuer"],
+        ValidAudience = jwt["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!))
     };
 })
-// Also enable cookie auth for MVC pages (AccountController)
 .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
 {
     opts.LoginPath = "/Account/Login";
@@ -54,33 +50,26 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 // 🌐 CORS
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", p =>
-        p.AllowAnyOrigin()
-         .AllowAnyHeader()
-         .AllowAnyMethod());
-});
+builder.Services.AddCors(o => o.AddPolicy("AllowFrontend", p =>
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
+));
 
 // 📦 EF Core
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
 // 📘 Swagger + API + MVC
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Online Electronics Store API",
-        Version = "v1"
-    });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Online Electronics Store API", Version = "v1" });
 });
-builder.Services.AddControllersWithViews();  // <-- MVC + API
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
-// 🧱 Apply migrations on startup
+// 🧱 Auto‐migrate
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -89,13 +78,12 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex) { logger.LogError(ex, "Migration failed"); }
 }
 
-// 🎯 Middleware pipeline
+// ─── Middleware pipeline ───────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1"));
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
 }
 else
 {
@@ -108,19 +96,17 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("AllowFrontend");
-
-// Authentication → Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// MVC routes (for Razor Views & AccountController)
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-// Attribute‐routed API controllers
+// ─── Endpoint mapping ──────────────────────────────────────────────
+// Attribute-routed API controllers
 app.MapControllers();
 
-// Listen on port 8080
-app.Urls.Add("http://*:8080");
-app.Run("http://0.0.0.0:8080");
+// Conventional MVC route (root “/” goes to HomeController → Index)
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}"
+);
+
+app.Run();
