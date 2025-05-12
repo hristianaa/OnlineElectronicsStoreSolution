@@ -1,8 +1,11 @@
-﻿using OnlineElectronicsStore.Data;
+﻿// Services/Implementations/CheckoutService.cs
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
-
 
 namespace OnlineElectronicsStore.Services.Implementations
 {
@@ -15,15 +18,19 @@ namespace OnlineElectronicsStore.Services.Implementations
             _context = context;
         }
 
+        /// <inheritdoc />
         public async Task<bool> PlaceOrderAsync(int userId)
         {
+            // 1. Load the user’s cart with product details
             var cartItems = await _context.CartItems
                 .Include(c => c.Product)
                 .Where(c => c.UserId == userId)
                 .ToListAsync();
 
-            if (!cartItems.Any()) return false;
+            if (!cartItems.Any())
+                return false;
 
+            // 2. Build the Order and OrderItems
             var order = new Order
             {
                 UserId = userId,
@@ -37,10 +44,11 @@ namespace OnlineElectronicsStore.Services.Implementations
                 }).ToList()
             };
 
+            // 3. Persist the Order and clear the cart
             _context.Orders.Add(order);
             _context.CartItems.RemoveRange(cartItems);
-
             await _context.SaveChangesAsync();
+
             return true;
         }
     }

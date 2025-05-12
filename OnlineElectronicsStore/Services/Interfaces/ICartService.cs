@@ -1,4 +1,5 @@
-﻿using OnlineElectronicsStore.DTOs;
+﻿// Services/Interfaces/ICartService.cs
+using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -7,17 +8,18 @@ namespace OnlineElectronicsStore.Services.Interfaces
 {
     public interface ICartService
     {
-        // Synchronous methods
-        IEnumerable<CartItem> GetCartItems(int userId);
-        CartItem? GetCartItemById(int id);
-        void AddToCart(CartItem item);
-        void UpdateCartItem(CartItem item);
-        void RemoveFromCart(int id);
-        void ClearCart(int userId);
+        // MVC pages: work with domain CartItem
+        Task<IEnumerable<CartItem>> GetCartItemsAsync(int userId);
+        Task<CartItem?> GetCartItemByIdAsync(int id);
+        Task AddCartItemAsync(CartItem item);
+        Task UpdateCartItemAsync(CartItem item);
+        Task RemoveCartItemAsync(int id);
+        Task ClearCartAsync(int userId);
 
-        // Asynchronous methods for controller use
-        Task<bool> AddToCartAsync(CartItemDto item);
-        Task<bool> RemoveFromCartAsync(CartItemDto item);
-        Task<CartDto> GetCartAsync();
+        // API & AJAX: work with DTOs and aggregate CartDto
+        Task<CartDto> GetCartDtoAsync(int userId);
+        Task<bool> AddToCartAsync(int userId, CartItemDto item);
+        Task<bool> RemoveFromCartAsync(int userId, CartItemDto item);
     }
 }
+

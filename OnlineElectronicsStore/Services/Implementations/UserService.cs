@@ -1,4 +1,9 @@
-﻿using OnlineElectronicsStore.Data;
+﻿// Services/Implementations/UserService.cs
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
@@ -7,62 +12,54 @@ namespace OnlineElectronicsStore.Services.Implementations
     public class UserService : IUserService
     {
         private readonly AppDbContext _context;
+        public UserService(AppDbContext context) => _context = context;
 
-        public UserService(AppDbContext context)
+        public async Task<IEnumerable<User>> GetAllAsync()
         {
-            _context = context;
+            return await _context.Users.ToListAsync();
         }
 
-        public IEnumerable<User> GetAll()
+        public async Task<User?> GetByIdAsync(int id)
         {
-            return _context.Users.ToList();
+            return await _context.Users.FindAsync(id);
         }
 
-        public User? GetById(int id)
+        public async Task<User?> GetByEmailAsync(string email)
         {
-            return _context.Users.FirstOrDefault(u => u.Id == id);
+            return await _context.Users
+                       .FirstOrDefaultAsync(u => u.Email == email);
         }
 
-        public User? GetByEmail(string email)
-        {
-            return _context.Users.FirstOrDefault(u => u.Email == email);
-        }
-
-        public void Create(User user)
+        public async Task<User> CreateAsync(User user)
         {
             _context.Users.Add(user);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+            return user;
         }
 
-        public void Update(User user)
+        public async Task<bool> UpdateAsync(User user)
         {
-            _context.Users.Update(user);
-            _context.SaveChanges();
+            var existing = await _context.Users.FindAsync(user.Id);
+            if (existing == null) return false;
+
+            // copy fields
+            existing.FullName = user.FullName;
+            existing.Email = user.Email;
+            existing.Password = user.Password;
+            existing.Role = user.Role;
+
+            _context.Users.Update(existing);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public void Delete(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var user = _context.Users.Find(id);
-            if (user != null)
-            {
-                _context.Users.Remove(user);
-                _context.SaveChanges();
-            }
-        }
-
-        public Task<IEnumerable<User>> GetAllAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<User?> GetByIdAsync(int id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task DeleteAsync(int id)
-        {
-            throw new NotImplementedException();
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return false;
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

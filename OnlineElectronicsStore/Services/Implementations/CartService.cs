@@ -1,74 +1,93 @@
-﻿using OnlineElectronicsStore.Data;
+﻿// Services/Implementations/CartService.cs
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using OnlineElectronicsStore.Data;
+using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
-using OnlineElectronicsStore.DTOs;
-using Microsoft.EntityFrameworkCore;
 
 namespace OnlineElectronicsStore.Services.Implementations
 {
     public class CartService : ICartService
     {
         private readonly AppDbContext _context;
+        public CartService(AppDbContext context) => _context = context;
 
-        public CartService(AppDbContext context)
+        // MVC: domain operations
+
+        public async Task<IEnumerable<CartItem>> GetCartItemsAsync(int userId)
         {
-            _context = context;
+            return await _context.CartItems
+                                 .Include(c => c.Product)
+                                 .Where(c => c.UserId == userId)
+                                 .ToListAsync();
         }
 
-        // Sync methods
-        public IEnumerable<CartItem> GetCartItems(int userId)
+        public async Task<CartItem?> GetCartItemByIdAsync(int id)
         {
-            return _context.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == userId)
-                .ToList();
+            return await _context.CartItems
+                                 .Include(c => c.Product)
+                                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public CartItem? GetCartItemById(int id)
-        {
-            return _context.CartItems
-                .Include(c => c.Product)
-                .FirstOrDefault(c => c.Id == id);
-        }
-
-        public void AddToCart(CartItem item)
+        public async Task AddCartItemAsync(CartItem item)
         {
             _context.CartItems.Add(item);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public void UpdateCartItem(CartItem item)
+        public async Task UpdateCartItemAsync(CartItem item)
         {
             _context.CartItems.Update(item);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public void RemoveFromCart(int id)
+        public async Task RemoveCartItemAsync(int id)
         {
-            var item = _context.CartItems.Find(id);
+            var item = await _context.CartItems.FindAsync(id);
             if (item != null)
             {
                 _context.CartItems.Remove(item);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
 
-        public void ClearCart(int userId)
+        public async Task ClearCartAsync(int userId)
         {
             var items = _context.CartItems.Where(c => c.UserId == userId);
             _context.CartItems.RemoveRange(items);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        // Async methods for API use
+        // API/AJAX: DTO operations
 
-        public async Task<bool> AddToCartAsync(CartItemDto item)
+        public async Task<CartDto> GetCartDtoAsync(int userId)
+        {
+            var items = await _context.CartItems
+                                      .Include(c => c.Product)
+                                      .Where(c => c.UserId == userId)
+                                      .ToListAsync();
+
+            return new CartDto
+            {
+                Items = items.Select(c => new CartItemDto
+                {
+                    ProductId = c.ProductId,
+                    Quantity = c.Quantity
+                }).ToList(),
+                TotalPrice = items.Sum(c => c.Quantity * c.Product.Price)
+            };
+        }
+
+        public async Task<bool> AddToCartAsync(int userId, CartItemDto item)
         {
             var product = await _context.Products.FindAsync(item.ProductId);
             if (product == null) return false;
 
             var cartItem = await _context.CartItems
-                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == 1); // TEMP userId
+                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == userId);
 
             if (cartItem != null)
             {
@@ -80,7 +99,7 @@ namespace OnlineElectronicsStore.Services.Implementations
                 {
                     ProductId = item.ProductId,
                     Quantity = item.Quantity,
-                    UserId = 1 // TEMP userId
+                    UserId = userId
                 };
                 _context.CartItems.Add(cartItem);
             }
@@ -89,10 +108,10 @@ namespace OnlineElectronicsStore.Services.Implementations
             return true;
         }
 
-        public async Task<bool> RemoveFromCartAsync(CartItemDto item)
+        public async Task<bool> RemoveFromCartAsync(int userId, CartItemDto item)
         {
             var cartItem = await _context.CartItems
-                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == 1); // TEMP userId
+                .FirstOrDefaultAsync(c => c.ProductId == item.ProductId && c.UserId == userId);
 
             if (cartItem != null)
             {
@@ -102,26 +121,6 @@ namespace OnlineElectronicsStore.Services.Implementations
             }
 
             return false;
-        }
-
-        public async Task<CartDto> GetCartAsync()
-        {
-            var items = await _context.CartItems
-                .Include(c => c.Product)
-                .Where(c => c.UserId == 1) // TEMP userId
-                .ToListAsync();
-
-            var dto = new CartDto
-            {
-                Items = items.Select(c => new CartItemDto
-                {
-                    ProductId = c.ProductId,
-                    Quantity = c.Quantity
-                }).ToList(),
-                TotalPrice = items.Sum(c => c.Quantity * c.Product.Price)
-            };
-
-            return dto;
         }
     }
 }

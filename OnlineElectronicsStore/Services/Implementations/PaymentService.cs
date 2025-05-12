@@ -1,4 +1,8 @@
-﻿using OnlineElectronicsStore.Data;
+﻿// Services/Implementations/PaymentService.cs
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
@@ -7,46 +11,41 @@ namespace OnlineElectronicsStore.Services.Implementations
     public class PaymentService : IPaymentService
     {
         private readonly AppDbContext _context;
+        public PaymentService(AppDbContext context) => _context = context;
 
-        public PaymentService(AppDbContext context)
+        public async Task<IEnumerable<Payment>> GetAllAsync()
         {
-            _context = context;
+            return await _context.Payments.ToListAsync();
         }
 
-        public IEnumerable<Payment> GetAll()
+        public async Task<Payment?> GetByIdAsync(int id)
         {
-            return _context.Payments.ToList();
+            return await _context.Payments.FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public Payment? GetById(int id)
-        {
-            return _context.Payments.FirstOrDefault(p => p.Id == id);
-        }
-
-        public void Create(Payment payment)
+        public async Task<Payment> CreateAsync(Payment payment)
         {
             _context.Payments.Add(payment);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+            return payment;
         }
 
-        public void MarkAsPaid(int id)
+        public async Task<bool> MarkAsPaidAsync(int id)
         {
-            var payment = _context.Payments.Find(id);
-            if (payment != null)
-            {
-                payment.IsPaid = true;
-                _context.SaveChanges();
-            }
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null) return false;
+            payment.IsPaid = true;
+            await _context.SaveChangesAsync();
+            return true;
         }
 
-        public void Delete(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            var payment = _context.Payments.Find(id);
-            if (payment != null)
-            {
-                _context.Payments.Remove(payment);
-                _context.SaveChanges();
-            }
+            var payment = await _context.Payments.FindAsync(id);
+            if (payment == null) return false;
+            _context.Payments.Remove(payment);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

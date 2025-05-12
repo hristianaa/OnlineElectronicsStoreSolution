@@ -1,5 +1,6 @@
-﻿using OnlineElectronicsStore.Data;
-using OnlineElectronicsStore.Models;
+﻿// Services/Implementations/OrderService.cs
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
@@ -10,66 +11,14 @@ namespace OnlineElectronicsStore.Services.Implementations
     public class OrderService : IOrderService
     {
         private readonly AppDbContext _context;
+        public OrderService(AppDbContext context) => _context = context;
 
-        public OrderService(AppDbContext context)
-        {
-            _context = context;
-        }
-
-        // ✅ Synchronous methods (optional)
-        public IEnumerable<Order> GetAll()
-        {
-            return _context.Orders
-                .Include(o => o.User)
-                .Include(o => o.CartItems)
-                .ToList();
-        }
-
-        public Order? GetById(int id)
-        {
-            return _context.Orders
-                .Include(o => o.User)
-                .Include(o => o.CartItems)
-                .FirstOrDefault(o => o.Id == id);
-        }
-
-        public IEnumerable<Order> GetByUserId(int userId)
-        {
-            return _context.Orders
-                .Include(o => o.CartItems)
-                .Where(o => o.UserId == userId)
-                .ToList();
-        }
-
-        public void Create(Order order)
-        {
-            _context.Orders.Add(order);
-            _context.SaveChanges();
-        }
-
-        public void Update(Order order)
-        {
-            _context.Orders.Update(order);
-            _context.SaveChanges();
-        }
-
-        public void Delete(int id)
-        {
-            var order = _context.Orders.Find(id);
-            if (order != null)
-            {
-                _context.Orders.Remove(order);
-                _context.SaveChanges();
-            }
-        }
-
-        // ✅ Async implementations
         public async Task<IEnumerable<Order>> GetAllAsync()
         {
             return await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                .ThenInclude(i => i.Product)
+                .ThenInclude(oi => oi.Product)
                 .ToListAsync();
         }
 
@@ -78,7 +27,7 @@ namespace OnlineElectronicsStore.Services.Implementations
             return await _context.Orders
                 .Include(o => o.User)
                 .Include(o => o.OrderItems)
-                .ThenInclude(i => i.Product)
+                .ThenInclude(oi => oi.Product)
                 .FirstOrDefaultAsync(o => o.Id == id);
         }
 
@@ -86,7 +35,7 @@ namespace OnlineElectronicsStore.Services.Implementations
         {
             return await _context.Orders
                 .Include(o => o.OrderItems)
-                .ThenInclude(i => i.Product)
+                .ThenInclude(oi => oi.Product)
                 .Where(o => o.UserId == userId)
                 .ToListAsync();
         }
@@ -97,14 +46,13 @@ namespace OnlineElectronicsStore.Services.Implementations
             await _context.SaveChangesAsync();
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
             var order = await _context.Orders.FindAsync(id);
-            if (order != null)
-            {
-                _context.Orders.Remove(order);
-                await _context.SaveChangesAsync();
-            }
+            if (order == null) return false;
+            _context.Orders.Remove(order);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

@@ -1,17 +1,40 @@
-﻿using OnlineElectronicsStore.Models;
+﻿// Services/Interfaces/IUserService.cs
+using OnlineElectronicsStore.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace OnlineElectronicsStore.Services.Interfaces
 {
     public interface IUserService
     {
-        IEnumerable<User> GetAll();
-        User? GetById(int id);
-        User? GetByEmail(string email);
-        void Create(User user);
-        void Update(User user);
-        void Delete(int id);
+        /// <summary>
+        /// Returns all users.
+        /// </summary>
         Task<IEnumerable<User>> GetAllAsync();
+
+        /// <summary>
+        /// Returns a single user by ID, or null if not found.
+        /// </summary>
         Task<User?> GetByIdAsync(int id);
-        Task DeleteAsync(int id);
+
+        /// <summary>
+        /// Returns a single user by email, or null if not found.
+        /// </summary>
+        Task<User?> GetByEmailAsync(string email);
+
+        /// <summary>
+        /// Creates a new user and returns the created entity (with its new ID).
+        /// </summary>
+        Task<User> CreateAsync(User user);
+
+        /// <summary>
+        /// Updates an existing user; returns true if the update succeeded.
+        /// </summary>
+        Task<bool> UpdateAsync(User user);
+
+        /// <summary>
+        /// Deletes the user with the given ID; returns true if deleted.
+        /// </summary>
+        Task<bool> DeleteAsync(int id);
     }
 }
