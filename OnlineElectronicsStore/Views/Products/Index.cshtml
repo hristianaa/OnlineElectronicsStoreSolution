@@ -7,9 +7,10 @@
 <p>
     <a asp-action="Create" class="btn btn-primary">Add New Product</a>
 </p>
-<table class="table">
+<table class="table table-striped">
     <thead>
         <tr>
+            <th>Image</th>
             <th>Name</th>
             <th>Price</th>
             <th>Category</th>
@@ -20,6 +21,16 @@
         @foreach (var p in Model)
         {
             <tr>
+                <td style="width:120px;">
+                    @if (!string.IsNullOrEmpty(p.MainImageUrl))
+                    {
+                        <img src="@p.MainImageUrl" alt="Main image" style="max-width:100px; max-height:75px;" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
                 <td>@p.Name</td>
                 <td>@p.Price.ToString("C")</td>
                 <td>@p.Category?.Name</td>
@@ -29,6 +40,20 @@
                     <a asp-action="Delete" asp-route-id="@p.Id">Delete</a>
                 </td>
             </tr>
+            @* Optionally show additional photos in a second row *@
+            @if (p.Photos?.Any() == true)
+            {
+                <tr>
+                    <td colspan="5" class="ps-5">
+                        @foreach (var photo in p.Photos)
+                        {
+                            <img src="@photo.Url" alt="Photo @photo.Id"
+                                 style="max-width:75px; max-height:75px; margin-right:8px;" />
+                        }
+                    </td>
+                </tr>
+            }
         }
     </tbody>
 </table>
+

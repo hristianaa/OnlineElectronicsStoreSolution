@@ -5,7 +5,7 @@
 
 <h1>@ViewData["Title"]</h1>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" enctype="multipart/form-data">
     <div class="mb-3">
         <label asp-for="Name" class="form-label"></label>
         <input asp-for="Name" class="form-control" />
@@ -27,15 +27,27 @@
         <span asp-validation-for="Price" class="text-danger"></span>
     </div>
     <div class="mb-3">
+        <label asp-for="Stock" class="form-label"></label>
+        <input asp-for="Stock" class="form-control" />
+        <span asp-validation-for="Stock" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
         <label asp-for="CategoryId" class="form-label"></label>
-        <select asp-for="CategoryId" asp-items="ViewBag.CategoryId" class="form-select"></select>
+        <select asp-for="CategoryId" asp-items="ViewBag.Categories" class="form-select"></select>
         <span asp-validation-for="CategoryId" class="text-danger"></span>
     </div>
     <div class="mb-3">
-        <label asp-for="MainImageUrl" class="form-label"></label>
+        <label>Main Image URL</label>
         <input asp-for="MainImageUrl" class="form-control" />
         <span asp-validation-for="MainImageUrl" class="text-danger"></span>
     </div>
+
+    <div class="mb-3">
+        <label>Upload Photos</label>
+        <input type="file" name="Photos" multiple class="form-control" />
+        <small class="form-text text-muted">You can select multiple images.</small>
+    </div>
+
     <button type="submit" class="btn btn-success">Save</button>
     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>
