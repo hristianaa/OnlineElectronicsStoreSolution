@@ -1,21 +1,18 @@
 ﻿using System.Threading.Tasks;
-using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.DTOs;
+using OnlineElectronicsStore.Models;
 
 namespace OnlineElectronicsStore.Services.Interfaces
 {
-    /// <summary>
-    /// Handles user authentication and registration.
-    /// </summary>
     public interface IAuthService
     {
         /// <summary>
-        /// Validates the given credentials, returning the User if valid, or null otherwise.
+        /// Verifies email & password and returns the matching User, or null.
         /// </summary>
         Task<User?> ValidateCredentialsAsync(string email, string password);
 
         /// <summary>
-        /// Registers a new user with the given info, returning the created User.
+        /// Creates a new User from the RegisterDto and returns it (with its new Id).
         /// </summary>
         Task<User> RegisterUserAsync(RegisterDto dto);
 

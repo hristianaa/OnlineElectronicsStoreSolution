@@ -1,11 +1,12 @@
-﻿using System.Security.Claims;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models.ViewModels;
 using OnlineElectronicsStore.Services.Interfaces;
-
-
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -39,20 +40,22 @@ namespace OnlineElectronicsStore.Controllers
                 return View(vm);
             }
 
+            // Build claims and sign in with cookie
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Name,           user.FullName),
+                new Claim(ClaimTypes.Email,          user.Email),
+                new Claim(ClaimTypes.Role,           user.Role)
             };
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(identity));
 
-            if (Url.IsLocalUrl(vm.ReturnUrl))
-                return Redirect(vm.ReturnUrl!);
+            // Redirect back if local, or to Home
+            if (!string.IsNullOrEmpty(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
+                return Redirect(vm.ReturnUrl);
 
             return RedirectToAction("Index", "Home");
         }
@@ -69,23 +72,25 @@ namespace OnlineElectronicsStore.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
+            // Prevent duplicate emails
             if (await _userService.GetByEmailAsync(vm.Email) != null)
             {
                 ModelState.AddModelError(nameof(vm.Email), "Email already in use.");
                 return View(vm);
             }
 
-            var newUser = await _authService.RegisterUserAsync(new DTOs.RegisterDto
+            // Create the user
+            var dto = new RegisterDto
             {
                 FullName = vm.FullName,
                 Email = vm.Email,
                 Password = vm.Password,
                 Role = "User"
-            });
+            };
+            var newUser = await _authService.RegisterUserAsync(dto);
 
-            // Optionally auto‐login after registration:
-            // var token = _authService.GenerateJwtToken(newUser);
-            // … or sign in cookie …
+            // Optionally, sign them in immediately:
+            // await _authService.SignInWithCookieAsync(HttpContext, newUser);
 
             return RedirectToAction(nameof(Login));
         }
