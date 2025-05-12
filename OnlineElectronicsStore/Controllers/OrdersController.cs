@@ -1,82 +1,77 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Services.Interfaces;
+﻿using System;
+using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class OrdersController : ControllerBase
+    public class OrdersController : Controller
     {
         private readonly IOrderService _orderService;
-
         public OrdersController(IOrderService orderService)
         {
             _orderService = orderService;
         }
 
-        // 📦 GET: api/orders (Admin only)
+        // GET: /Orders
+        // Admin only: list all orders
         [Authorize(Roles = "Admin")]
-        [HttpGet]
-        public async Task<IActionResult> GetOrders()
+        public async Task<IActionResult> Index()
         {
             var orders = await _orderService.GetAllAsync();
             if (!orders.Any())
-                return NotFound(new { Message = "No orders found." });
-
-            return Ok(orders);
+                ViewBag.Message = "No orders found.";
+            return View(orders);
         }
 
-        // 📄 GET: api/orders/{id}
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrder(int id)
+        // GET: /Orders/Details/5
+        // Anyone authorized can view a single order (you could restrict to Admin or owner)
+        public async Task<IActionResult> Details(int id)
         {
             var order = await _orderService.GetByIdAsync(id);
-            if (order == null)
-                return NotFound(new { Message = "Order not found." });
-
-            return Ok(order);
+            if (order == null) return NotFound();
+            return View(order);
         }
 
-        // 🧾 GET: api/orders/history
-        [HttpGet("history")]
-        public async Task<IActionResult> GetOrderHistory()
+        // GET: /Orders/History
+        // Show the logged‐in user’s order history
+        public async Task<IActionResult> History()
         {
-            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var userId = GetCurrentUserId();
             var userOrders = await _orderService.GetByUserIdAsync(userId);
-
             if (!userOrders.Any())
-                return NotFound(new { Message = "No orders found for your account." });
-
-            return Ok(userOrders);
+                ViewBag.Message = "You have no past orders.";
+            return View(userOrders);
         }
 
-        // 🛒 POST: api/orders
-        [HttpPost]
-        public async Task<IActionResult> PostOrder([FromBody] Order order)
-        {
-            if (order == null || !ModelState.IsValid)
-                return BadRequest(new { Message = "Invalid order data." });
-
-            await _orderService.CreateAsync(order);
-            return CreatedAtAction(nameof(GetOrder), new { id = order.Id }, order);
-        }
-
-        // ❌ DELETE: api/orders/{id} (Admin only)
+        // GET: /Orders/Delete/5
+        // Admin only: confirm deletion
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteOrder(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var existing = await _orderService.GetByIdAsync(id);
-            if (existing == null)
-                return NotFound(new { Message = "Order not found." });
+            var order = await _orderService.GetByIdAsync(id);
+            if (order == null) return NotFound();
+            return View(order);
+        }
 
+        // POST: /Orders/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
             await _orderService.DeleteAsync(id);
-            return Ok(new { Message = "Order deleted successfully." });
+            return RedirectToAction(nameof(Index));
+        }
+
+        private int GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? throw new InvalidOperationException("User ID claim missing");
+            return int.Parse(claim);
         }
     }
 }
-

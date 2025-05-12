@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
@@ -6,55 +10,72 @@ using OnlineElectronicsStore.Services.Interfaces;
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class PaymentsController : ControllerBase
+    public class PaymentsController : Controller
     {
         private readonly IPaymentService _paymentService;
-
         public PaymentsController(IPaymentService paymentService)
         {
             _paymentService = paymentService;
         }
 
-        [HttpGet]
-        public IActionResult GetPayments()
+        // GET: /Payments
+        public IActionResult Index()
         {
-            return Ok(_paymentService.GetAll());
+            var payments = _paymentService.GetAll().ToList();
+            return View(payments);
         }
 
-        [HttpGet("{id}")]
-        public IActionResult GetPayment(int id)
+        // GET: /Payments/Details/5
+        public IActionResult Details(int id)
         {
             var payment = _paymentService.GetById(id);
-            if (payment == null)
-                return NotFound(new { Message = "Payment not found." });
-
-            return Ok(payment);
+            if (payment == null) return NotFound();
+            return View(payment);
         }
 
-        [HttpPost]
-        public IActionResult CreatePayment([FromBody] Payment payment)
+        // GET: /Payments/Create
+        public IActionResult Create()
+        {
+            return View(new Payment());
+        }
+
+        // POST: /Payments/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult Create(Payment model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return View(model);
 
-            _paymentService.Create(payment);
-            return Ok(new { Message = "Payment recorded." });
+            _paymentService.Create(model);
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("mark-paid/{id}")]
-        public IActionResult MarkAsPaid(int id)
+        // POST: /Payments/MarkPaid/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult MarkPaid(int id)
         {
+            var payment = _paymentService.GetById(id);
+            if (payment == null) return NotFound();
+
             _paymentService.MarkAsPaid(id);
-            return Ok(new { Message = "Payment marked as paid." });
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult DeletePayment(int id)
+        // GET: /Payments/Delete/5
+        public IActionResult Delete(int id)
+        {
+            var payment = _paymentService.GetById(id);
+            if (payment == null) return NotFound();
+            return View(payment);
+        }
+
+        // POST: /Payments/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
         {
             _paymentService.Delete(id);
-            return Ok(new { Message = "Payment deleted." });
+            return RedirectToAction(nameof(Index));
         }
     }
 }

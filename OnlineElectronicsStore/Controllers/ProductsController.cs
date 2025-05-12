@@ -1,102 +1,108 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Authorization;
-using OnlineElectronicsStore.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
+using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ProductsController : ControllerBase
+   
+    public class ProductsController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly IProductService _products;
+        public ProductsController(IProductService products)
+            => _products = products;
 
-        public ProductsController(AppDbContext context)
+        // GET /Products
+        [AllowAnonymous]
+        public async Task<IActionResult> Index()
         {
-            _context = context;
+            var model = await _products.GetAllAsync();
+            if (model == null || !model.Any())
+            {
+                ViewBag.Message = "No products available.";
+                return View("Empty");
+            }
+            return View(model);
         }
 
-        // ✅ Publicly accessible: Get all products
+        // GET /Products/Details/5
         [AllowAnonymous]
-        [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Details(int id)
         {
-            var products = await _context.Products.ToListAsync();
-
-            if (products == null || products.Count == 0)
-                return NotFound(new { Message = "No products available." });
-
-            return Ok(products);
-        }
-
-        // ✅ Get single product by ID
-        [AllowAnonymous]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _products.GetByIdAsync(id);
             if (product == null)
-                return NotFound(new { Message = "Product not found." });
-
-            return Ok(product);
+                return View("NotFound", id);
+            return View(product);
         }
 
-        // ✅ Add a new product (Admin only)
+        // GET /Products/Create
         [Authorize(Roles = "Admin")]
+        public IActionResult Create()
+            => View(new Product());
+
+        // POST /Products/Create
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct([FromBody] Product product)
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Product product)
         {
-            if (product == null || !ModelState.IsValid)
-                return BadRequest(new { Message = "Invalid product data." });
+            if (!ModelState.IsValid)
+                return View(product);
 
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+            await _products.AddAsync(product);
+            return RedirectToAction(nameof(Index));
         }
 
-        // ✅ Update product (Admin only)
+        // GET /Products/Edit/5
         [Authorize(Roles = "Admin")]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(int id, [FromBody] Product product)
+        public async Task<IActionResult> Edit(int id)
+        {
+            var product = await _products.GetByIdAsync(id);
+            if (product == null)
+                return NotFound();
+            return View(product);
+        }
+
+        // POST /Products/Edit/5
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Product product)
         {
             if (id != product.Id)
-                return BadRequest(new { Message = "Product ID mismatch." });
+                return BadRequest();
 
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return View(product);
 
-            _context.Entry(product).State = EntityState.Modified;
+            var updated = await _products.UpdateAsync(product);
+            if (!updated)
+                return NotFound();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Products.Any(e => e.Id == id))
-                    return NotFound(new { Message = "Product not found." });
-                else
-                    throw;
-            }
-
-            return Ok(new { Message = "Product updated successfully." });
+            return RedirectToAction(nameof(Index));
         }
 
-        // ✅ Delete product (Admin only)
+        // GET /Products/Delete/5
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _products.GetByIdAsync(id);
             if (product == null)
-                return NotFound(new { Message = "Product not found." });
+                return NotFound();
+            return View(product);
+        }
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+        // POST /Products/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var deleted = await _products.DeleteAsync(id);
+            if (!deleted)
+                return NotFound();
 
-            return Ok(new { Message = "Product deleted successfully." });
+            return RedirectToAction(nameof(Index));
         }
     }
 }

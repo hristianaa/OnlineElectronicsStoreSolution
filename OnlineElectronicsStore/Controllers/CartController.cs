@@ -1,14 +1,13 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OnlineElectronicsStore.Services.Interfaces;
 using OnlineElectronicsStore.DTOs;
-
+using OnlineElectronicsStore.Services.Interfaces;
+using System.Threading.Tasks;
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class CartController : ControllerBase
+    [Authorize]  // only logged‐in users can view or modify their cart
+    public class CartController : Controller
     {
         private readonly ICartService _cartService;
 
@@ -17,26 +16,36 @@ namespace OnlineElectronicsStore.Controllers
             _cartService = cartService;
         }
 
-        [HttpPost("add")]
-        public async Task<IActionResult> AddToCart([FromBody] CartItemDto item)
-        {
-            var result = await _cartService.AddToCartAsync(item);
-            return Ok(result);
-        }
-
-        [HttpPost("remove")]
-        public async Task<IActionResult> RemoveFromCart([FromBody] CartItemDto item)
-        {
-            var result = await _cartService.RemoveFromCartAsync(item);
-            return Ok(result);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetCart()
+        // GET: /Cart
+        public async Task<IActionResult> Index()
         {
             var cart = await _cartService.GetCartAsync();
-            return Ok(cart);
+            return View(cart);  // Views/Cart/Index.cshtml expects a CartDto model
+        }
+
+        // POST: /Cart/Add
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Add(int productId, int quantity = 1)
+        {
+            var item = new CartItemDto
+            {
+                ProductId = productId,
+                Quantity = quantity
+            };
+            await _cartService.AddToCartAsync(item);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Cart/Remove
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Remove(int productId)
+        {
+            var item = new CartItemDto
+            {
+                ProductId = productId
+            };
+            await _cartService.RemoveFromCartAsync(item);
+            return RedirectToAction(nameof(Index));
         }
     }
-
 }

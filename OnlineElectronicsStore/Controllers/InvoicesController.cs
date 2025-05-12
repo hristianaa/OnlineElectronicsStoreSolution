@@ -1,15 +1,15 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Services.Helpers;
 using OnlineElectronicsStore.Services.Interfaces;
+using OnlineElectronicsStore.Services.Helpers;
 
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class InvoicesController : ControllerBase
+    public class InvoicesController : Controller
     {
         private readonly IInvoiceService _invoiceService;
 
@@ -18,56 +18,73 @@ namespace OnlineElectronicsStore.Controllers
             _invoiceService = invoiceService;
         }
 
-        // 📄 GET all invoices
-        [HttpGet]
-        public async Task<IActionResult> GetInvoices()
+        // GET: /Invoices
+        public async Task<IActionResult> Index()
         {
             var invoices = await _invoiceService.GetAllAsync();
-            return Ok(invoices);
+            return View(invoices);
         }
 
-        // 📄 GET single invoice by ID
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetInvoice(int id)
+        // GET: /Invoices/Details/5
+        public async Task<IActionResult> Details(int id)
         {
             var invoice = await _invoiceService.GetByIdAsync(id);
             if (invoice == null)
-                return NotFound(new { Message = $"Invoice with ID {id} not found." });
+                return NotFound();
 
-            return Ok(invoice);
+            return View(invoice);
         }
 
-        // 🧾 POST create new invoice
-        [HttpPost]
-        public async Task<IActionResult> CreateInvoice([FromBody] Invoice invoice)
+        // GET: /Invoices/Create
+        // (if you want admins to be able to manually create invoices)
+        [Authorize(Roles = "Admin")]
+        public IActionResult Create()
+        {
+            return View(new Invoice());
+        }
+
+        // POST: /Invoices/Create
+        [HttpPost, Authorize(Roles = "Admin"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Invoice model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return View(model);
 
-            var created = await _invoiceService.CreateAsync(invoice);
-            return CreatedAtAction(nameof(GetInvoice), new { id = created.Id }, created);
+            var created = await _invoiceService.CreateAsync(model);
+            return RedirectToAction(nameof(Details), new { id = created.Id });
         }
 
-        // ❌ DELETE invoice by ID
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteInvoice(int id)
+        // GET: /Invoices/Delete/5
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _invoiceService.DeleteAsync(id);
-            if (!deleted)
-                return NotFound(new { Message = $"Invoice with ID {id} not found or already deleted." });
+            var invoice = await _invoiceService.GetByIdAsync(id);
+            if (invoice == null)
+                return NotFound();
 
-            return Ok(new { Message = $"Invoice {id} deleted successfully." });
+            return View(invoice);
         }
-        [HttpGet("{id}/pdf")]
+
+        // POST: /Invoices/Delete/5
+        [HttpPost, ActionName("Delete"), Authorize(Roles = "Admin"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var success = await _invoiceService.DeleteAsync(id);
+            if (!success)
+                return NotFound();
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Invoices/DownloadPdf/5
         public async Task<IActionResult> DownloadPdf(int id)
         {
             var invoice = await _invoiceService.GetByIdAsync(id);
             if (invoice == null)
-                return NotFound("Invoice not found");
+                return NotFound();
 
             var pdfBytes = InvoicePdfGenerator.GeneratePdf(invoice);
             return File(pdfBytes, "application/pdf", $"Invoice_{invoice.Id}.pdf");
         }
-
     }
 }

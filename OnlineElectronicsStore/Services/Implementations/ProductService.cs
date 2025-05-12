@@ -1,13 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
 
-namespace OnlineElectronicsStore.Services
+namespace OnlineElectronicsStore.Services.Implementations
 {
     public class ProductService : IProductService
     {
@@ -18,103 +19,94 @@ namespace OnlineElectronicsStore.Services
             _context = context;
         }
 
-        // Get all products including category information
-        public async Task<IEnumerable<Product>> GetAllProducts()
+        public async Task<IEnumerable<Product>> GetAllAsync()
         {
             return await _context.Products
                                  .Include(p => p.Category)
+                                 .Include(p => p.Photos)
                                  .ToListAsync();
         }
 
-        // Get a product by its ID
-        public async Task<Product?> GetById(int id)
+        public async Task<Product?> GetByIdAsync(int id)
         {
-            var product = await _context.Products
-                                         .Include(p => p.Category)
-                                         .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (product == null)
-            {
-                throw new KeyNotFoundException($"Product with ID {id} not found.");
-            }
-
-            return product;
+            return await _context.Products
+                                 .Include(p => p.Category)
+                                 .Include(p => p.Photos)
+                                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        // Search products by keyword in name or description
-        public async Task<IEnumerable<Product>> Search(string keyword)
+        public async Task<IEnumerable<Product>> SearchAsync(string keyword)
         {
-            if (string.IsNullOrEmpty(keyword))
-            {
-                throw new ArgumentException("Keyword cannot be null or empty.", nameof(keyword));
-            }
+            if (string.IsNullOrWhiteSpace(keyword))
+                return Enumerable.Empty<Product>();
 
             return await _context.Products
-                                 .Where(p => p.Name.Contains(keyword) || p.Description.Contains(keyword))
+                                 .Where(p => p.Name.Contains(keyword)
+                                          || p.ShortDescription.Contains(keyword)
+                                          || p.LongDescription.Contains(keyword))
                                  .Include(p => p.Category)
+                                 .Include(p => p.Photos)
                                  .ToListAsync();
         }
 
-        // Add a new product to the database
-        public async Task AddProduct(Product product)
+        public async Task<Product> AddAsync(Product product)
         {
             if (product == null)
-            {
-                throw new ArgumentNullException(nameof(product), "Product cannot be null.");
-            }
+                throw new ArgumentNullException(nameof(product));
 
-            // Validate the product using DataAnnotations
             ValidateProduct(product);
 
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
+            return product;
         }
 
-        // Update an existing product
-        public async Task UpdateProduct(Product product)
+        public async Task<bool> UpdateAsync(Product product)
         {
             if (product == null)
-            {
-                throw new ArgumentNullException(nameof(product), "Product cannot be null.");
-            }
+                throw new ArgumentNullException(nameof(product));
 
-            var existingProduct = await _context.Products
-                                                 .FirstOrDefaultAsync(p => p.Id == product.Id);
+            var existing = await _context.Products
+                                         .Include(p => p.Photos)
+                                         .FirstOrDefaultAsync(p => p.Id == product.Id);
+            if (existing == null)
+                return false;
 
-            if (existingProduct == null)
-            {
-                throw new KeyNotFoundException($"Product with ID {product.Id} not found.");
-            }
+            ValidateProduct(product);
 
-            // Update the existing product's properties
-            _context.Entry(existingProduct).CurrentValues.SetValues(product);
+            // copy over scalar and navigation props
+            _context.Entry(existing).CurrentValues.SetValues(product);
+
+            // replace Photos collection if needed
+            existing.Photos.Clear();
+            foreach (var photo in product.Photos)
+                existing.Photos.Add(photo);
+
             await _context.SaveChangesAsync();
+            return true;
         }
 
-        // Delete a product by ID
-        public async Task DeleteProduct(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null)
-            {
-                throw new KeyNotFoundException($"Product with ID {id} not found.");
-            }
+                return false;
 
             _context.Products.Remove(product);
             await _context.SaveChangesAsync();
+            return true;
         }
 
-        // Validate the product using DataAnnotations
         private void ValidateProduct(Product product)
         {
-            var validationContext = new ValidationContext(product);
-            var validationResults = new List<ValidationResult>();
-
-            if (!Validator.TryValidateObject(product, validationContext, validationResults, true))
+            var ctx = new ValidationContext(product);
+            var results = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(product, ctx, results, true))
             {
-                var errors = string.Join(", ", validationResults.Select(v => v.ErrorMessage));
-                throw new InvalidOperationException($"Product is invalid: {errors}");
+                var errors = string.Join("; ", results.Select(r => r.ErrorMessage));
+                throw new InvalidOperationException($"Product validation failed: {errors}");
             }
         }
     }
 }
+

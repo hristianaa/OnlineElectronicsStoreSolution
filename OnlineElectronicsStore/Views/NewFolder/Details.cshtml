@@ -1,0 +1,25 @@
+﻿@model OnlineElectronicsStore.Models.Product
+@{
+    ViewData["Title"] = Model.Name;
+}
+<div class="row">
+    <div class="col-md-6">
+        <img src="@Model.MainImageUrl" class="img-fluid" />
+        <div class="mt-2">
+            @foreach (var photo in Model.Photos)
+            {
+                <img src="@photo.Url" class="img-thumbnail me-2" style="width:100px" />
+            }
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h2>@Model.Name</h2>
+        <p>@Model.LongDescription</p>
+        <h4>@Model.Price.ToString("C")</h4>
+        <form asp-controller="Cart" asp-action="Add" method="post">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            <input type="number" name="quantity" value="1" min="1" class="form-control w-25 d-inline-block" />
+            <button type="submit" class="btn btn-success">Add to Cart</button>
+        </form>
+    </div>
+</div>

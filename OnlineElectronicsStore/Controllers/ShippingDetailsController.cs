@@ -1,15 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using Microsoft.AspNetCore.Authorization;
-
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class ShippingDetailsController : ControllerBase
+    [Authorize(Roles = "Admin")]
+    public class ShippingDetailsController : Controller
     {
         private readonly AppDbContext _context;
 
@@ -18,47 +18,94 @@ namespace OnlineElectronicsStore.Controllers
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<ShippingDetails>>> GetShippingDetails()
+        // GET: /ShippingDetails
+        public async Task<IActionResult> Index()
         {
-            return await _context.ShippingDetails.ToListAsync();
+            var list = await _context.ShippingDetails
+                                     .OrderBy(s => s.Id)
+                                     .ToListAsync();
+            return View(list);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ShippingDetails>> GetShippingDetail(int id)
+        // GET: /ShippingDetails/Details/5
+        public async Task<IActionResult> Details(int id)
         {
-            var shippingDetail = await _context.ShippingDetails.FindAsync(id);
-            if (shippingDetail == null) return NotFound();
-            return shippingDetail;
+            var detail = await _context.ShippingDetails
+                                       .FirstOrDefaultAsync(s => s.Id == id);
+            if (detail == null) return NotFound();
+            return View(detail);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<ShippingDetails>> PostShippingDetail(ShippingDetails shippingDetail)
+        // GET: /ShippingDetails/Create
+        public IActionResult Create()
         {
-            _context.ShippingDetails.Add(shippingDetail);
+            return View(new ShippingDetails());
+        }
+
+        // POST: /ShippingDetails/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(ShippingDetails model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            _context.ShippingDetails.Add(model);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetShippingDetail), new { id = shippingDetail.Id }, shippingDetail);
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutShippingDetail(int id, ShippingDetails shippingDetail)
+        // GET: /ShippingDetails/Edit/5
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id != shippingDetail.Id) return BadRequest();
-
-            _context.Entry(shippingDetail).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            var detail = await _context.ShippingDetails.FindAsync(id);
+            if (detail == null) return NotFound();
+            return View(detail);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteShippingDetail(int id)
+        // POST: /ShippingDetails/Edit/5
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, ShippingDetails model)
         {
-            var shippingDetail = await _context.ShippingDetails.FindAsync(id);
-            if (shippingDetail == null) return NotFound();
+            if (id != model.Id) return BadRequest();
 
-            _context.ShippingDetails.Remove(shippingDetail);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            if (!ModelState.IsValid)
+                return View(model);
+
+            try
+            {
+                _context.Update(model);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.ShippingDetails.AnyAsync(s => s.Id == id))
+                    return NotFound();
+                throw;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /ShippingDetails/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var detail = await _context.ShippingDetails
+                                       .FirstOrDefaultAsync(s => s.Id == id);
+            if (detail == null) return NotFound();
+            return View(detail);
+        }
+
+        // POST: /ShippingDetails/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var detail = await _context.ShippingDetails.FindAsync(id);
+            if (detail != null)
+            {
+                _context.ShippingDetails.Remove(detail);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

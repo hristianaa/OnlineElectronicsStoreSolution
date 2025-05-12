@@ -1,64 +1,108 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using Microsoft.AspNetCore.Authorization;
-
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class WishlistsController : ControllerBase
+    [Authorize]  // only signed‐in users can manage wishlists
+    public class WishlistsController : Controller
     {
         private readonly AppDbContext _context;
-
         public WishlistsController(AppDbContext context)
         {
             _context = context;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Wishlist>>> GetWishlists()
+        // GET: /Wishlists
+        public async Task<IActionResult> Index()
         {
-            return await _context.Wishlists.ToListAsync();
+            var list = await _context.Wishlists
+                                     .OrderBy(w => w.Id)
+                                     .ToListAsync();
+            return View(list);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Wishlist>> GetWishlist(int id)
+        // GET: /Wishlists/Details/5
+        public async Task<IActionResult> Details(int id)
         {
-            var wishlist = await _context.Wishlists.FindAsync(id);
-            if (wishlist == null) return NotFound();
-            return wishlist;
+            var item = await _context.Wishlists
+                                     .FirstOrDefaultAsync(w => w.Id == id);
+            if (item == null) return NotFound();
+            return View(item);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<Wishlist>> PostWishlist(Wishlist wishlist)
+        // GET: /Wishlists/Create
+        public IActionResult Create()
         {
-            _context.Wishlists.Add(wishlist);
+            return View(new Wishlist());
+        }
+
+        // POST: /Wishlists/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Wishlist model)
+        {
+            if (!ModelState.IsValid)
+                return View(model);
+
+            _context.Wishlists.Add(model);
             await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetWishlist), new { id = wishlist.Id }, wishlist);
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutWishlist(int id, Wishlist wishlist)
+        // GET: /Wishlists/Edit/5
+        public async Task<IActionResult> Edit(int id)
         {
-            if (id != wishlist.Id) return BadRequest();
-
-            _context.Entry(wishlist).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            var item = await _context.Wishlists.FindAsync(id);
+            if (item == null) return NotFound();
+            return View(item);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteWishlist(int id)
+        // POST: /Wishlists/Edit/5
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Wishlist model)
         {
-            var wishlist = await _context.Wishlists.FindAsync(id);
-            if (wishlist == null) return NotFound();
+            if (id != model.Id) return BadRequest();
+            if (!ModelState.IsValid) return View(model);
 
-            _context.Wishlists.Remove(wishlist);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            try
+            {
+                _context.Update(model);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.Wishlists.AnyAsync(w => w.Id == id))
+                    return NotFound();
+                throw;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /Wishlists/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var item = await _context.Wishlists
+                                     .FirstOrDefaultAsync(w => w.Id == id);
+            if (item == null) return NotFound();
+            return View(item);
+        }
+
+        // POST: /Wishlists/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var item = await _context.Wishlists.FindAsync(id);
+            if (item != null)
+            {
+                _context.Wishlists.Remove(item);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

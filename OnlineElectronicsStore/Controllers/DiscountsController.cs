@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
@@ -6,48 +8,61 @@ using OnlineElectronicsStore.Services.Interfaces;
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize(Roles = "Admin")]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class DiscountsController : ControllerBase
+    public class DiscountsController : Controller
     {
         private readonly IDiscountService _discountService;
-
         public DiscountsController(IDiscountService discountService)
         {
             _discountService = discountService;
         }
 
-        [HttpGet]
-        public IActionResult GetAll()
+        // GET: /Discounts
+        public IActionResult Index()
         {
-            return Ok(_discountService.GetAll());
+            var discounts = _discountService.GetAll().ToList();
+            return View(discounts);
         }
 
-        [HttpGet("code/{code}")]
-        public IActionResult GetByCode(string code)
+        // GET: /Discounts/Details/ABC123
+        public IActionResult Details(string code)
         {
             var discount = _discountService.GetByCode(code);
-            if (discount == null)
-                return NotFound(new { Message = "Discount code not found." });
-
-            return Ok(discount);
+            if (discount == null) return NotFound();
+            return View(discount);
         }
 
-        [HttpPost]
-        public IActionResult Create([FromBody] Discount discount)
+        // GET: /Discounts/Create
+        public IActionResult Create()
+        {
+            return View(new Discount());
+        }
+
+        // POST: /Discounts/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult Create(Discount model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return View(model);
 
-            _discountService.Create(discount);
-            return Ok(new { Message = "Discount added." });
+            _discountService.Create(model);
+            return RedirectToAction(nameof(Index));
         }
 
-        [HttpDelete("{id}")]
+        // GET: /Discounts/Delete/5
         public IActionResult Delete(int id)
         {
+            var discount = _discountService.GetAll().FirstOrDefault(d => d.Id == id);
+            if (discount == null) return NotFound();
+            return View(discount);
+        }
+
+        // POST: /Discounts/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
+        {
             _discountService.Delete(id);
-            return Ok(new { Message = "Discount deleted." });
+            return RedirectToAction(nameof(Index));
         }
     }
 }
+

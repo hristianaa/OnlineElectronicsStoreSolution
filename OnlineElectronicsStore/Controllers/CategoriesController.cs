@@ -1,88 +1,110 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using Microsoft.AspNetCore.Authorization;
-
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CategoriesController : ControllerBase
+    [Authorize(Roles = "Admin")]
+    public class CategoriesController : Controller
     {
         private readonly AppDbContext _context;
-
         public CategoriesController(AppDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/categories
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+        // GET: /Categories
+        public async Task<IActionResult> Index()
         {
-            return await _context.Categories.ToListAsync();
+            var categories = await _context.Categories
+                                           .OrderBy(c => c.Name)
+                                           .ToListAsync();
+            return View(categories);
         }
 
-        // GET: api/categories/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> GetCategory(int id)
+        // GET: /Categories/Details/5
+        public async Task<IActionResult> Details(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
-
-            if (category == null)
-            {
-                return NotFound(new { Message = "Category not found." });
-            }
-
-            return category;
+            var category = await _context.Categories
+                                         .FirstOrDefaultAsync(c => c.Id == id);
+            if (category == null) return NotFound();
+            return View(category);
         }
 
-        // POST: api/categories
-        [HttpPost]
-        public async Task<ActionResult<Category>> PostCategory(Category category)
+        // GET: /Categories/Create
+        public IActionResult Create()
         {
-            if (category == null || string.IsNullOrWhiteSpace(category.Name))
-            {
-                return BadRequest(new { Message = "Invalid category data." });
-            }
+            return View(new Category());
+        }
+
+        // POST: /Categories/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(Category category)
+        {
+            if (!ModelState.IsValid)
+                return View(category);
 
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetCategory), new { id = category.Id }, category);
+            return RedirectToAction(nameof(Index));
         }
 
-        // PUT: api/categories/{id}
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCategory(int id, Category category)
-        {
-            if (id != category.Id)
-            {
-                return BadRequest(new { Message = "Category ID mismatch." });
-            }
-
-            _context.Entry(category).State = EntityState.Modified;
-
-            await _context.SaveChangesAsync();
-            return Ok(new { Message = "Category updated successfully." });
-        }
-
-        // DELETE: api/categories/{id}
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        // GET: /Categories/Edit/5
+        public async Task<IActionResult> Edit(int id)
         {
             var category = await _context.Categories.FindAsync(id);
-            if (category == null)
+            if (category == null) return NotFound();
+            return View(category);
+        }
+
+        // POST: /Categories/Edit/5
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, Category category)
+        {
+            if (id != category.Id) return BadRequest();
+
+            if (!ModelState.IsValid)
+                return View(category);
+
+            try
             {
-                return NotFound(new { Message = "Category not found." });
+                _context.Update(category);
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await _context.Categories.AnyAsync(c => c.Id == id))
+                    return NotFound();
+                throw;
             }
 
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
 
-            return Ok(new { Message = "Category deleted successfully." });
+        // GET: /Categories/Delete/5
+        public async Task<IActionResult> Delete(int id)
+        {
+            var category = await _context.Categories
+                                         .FirstOrDefaultAsync(c => c.Id == id);
+            if (category == null) return NotFound();
+            return View(category);
+        }
+
+        // POST: /Categories/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
+            {
+                _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

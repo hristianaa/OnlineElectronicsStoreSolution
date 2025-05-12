@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.Linq;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
@@ -6,83 +9,102 @@ using OnlineElectronicsStore.Services.Interfaces;
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CartItemsController : ControllerBase
+    public class CartItemsController : Controller
     {
         private readonly ICartService _cartService;
-
         public CartItemsController(ICartService cartService)
         {
             _cartService = cartService;
         }
 
-        // GET: api/cartitems/user/5
-        [HttpGet("user/{userId}")]
-        public IActionResult GetUserCart(int userId)
+        // GET: /CartItems
+        public IActionResult Index()
         {
-            var cart = _cartService.GetCartItems(userId);
-            if (!cart.Any())
-                return NotFound(new { Message = "Cart is empty." });
-
-            return Ok(cart);
+            var userId = GetCurrentUserId();
+            var items = _cartService.GetCartItems(userId).ToList();
+            return View(items);
         }
 
-        // GET: api/cartitems/5
-        [HttpGet("{id}")]
-        public IActionResult GetCartItem(int id)
+        // GET: /CartItems/Details/5
+        public IActionResult Details(int id)
         {
             var item = _cartService.GetCartItemById(id);
-            if (item == null)
-                return NotFound(new { Message = "Item not found in cart." });
-
-            return Ok(item);
+            if (item == null) return NotFound();
+            return View(item);
         }
 
-        // POST: api/cartitems
-        [HttpPost]
-        public IActionResult AddToCart([FromBody] CartItem item)
+        // GET: /CartItems/Create
+        public IActionResult Create(int? productId)
+        {
+            var model = new CartItem
+            {
+                ProductId = productId ?? 0,
+                Quantity = 1
+            };
+            return View(model);
+        }
+
+        // POST: /CartItems/Create
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult Create(CartItem model)
         {
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+                return View(model);
 
-            _cartService.AddToCart(item);
-            return Ok(new { Message = "Item added to cart." });
+            model.UserId = GetCurrentUserId();
+            _cartService.AddToCart(model);
+            return RedirectToAction(nameof(Index));
         }
 
-        // PUT: api/cartitems/5
-        [HttpPut("{id}")]
-        public IActionResult UpdateCartItem(int id, [FromBody] CartItem item)
+        // GET: /CartItems/Edit/5
+        public IActionResult Edit(int id)
         {
-            if (id != item.Id)
-                return BadRequest(new { Message = "ID mismatch." });
-
-            var existing = _cartService.GetCartItemById(id);
-            if (existing == null)
-                return NotFound(new { Message = "Cart item not found." });
-
-            _cartService.UpdateCartItem(item);
-            return Ok(new { Message = "Cart item updated." });
+            var item = _cartService.GetCartItemById(id);
+            if (item == null) return NotFound();
+            return View(item);
         }
 
-        // DELETE: api/cartitems/5
-        [HttpDelete("{id}")]
-        public IActionResult RemoveFromCart(int id)
+        // POST: /CartItems/Edit/5
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult Edit(int id, CartItem model)
         {
-            var existing = _cartService.GetCartItemById(id);
-            if (existing == null)
-                return NotFound(new { Message = "Item not found in cart." });
+            if (id != model.Id) return BadRequest();
+            if (!ModelState.IsValid) return View(model);
 
+            _cartService.UpdateCartItem(model);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: /CartItems/Delete/5
+        public IActionResult Delete(int id)
+        {
+            var item = _cartService.GetCartItemById(id);
+            if (item == null) return NotFound();
+            return View(item);
+        }
+
+        // POST: /CartItems/Delete/5
+        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
+        public IActionResult DeleteConfirmed(int id)
+        {
             _cartService.RemoveFromCart(id);
-            return Ok(new { Message = "Item removed from cart." });
+            return RedirectToAction(nameof(Index));
         }
 
-        // DELETE: api/cartitems/clear/5
-        [HttpDelete("clear/{userId}")]
-        public IActionResult ClearCart(int userId)
+        // POST: /CartItems/Clear
+        [HttpPost, ValidateAntiForgeryToken]
+        public IActionResult Clear()
         {
-            _cartService.ClearCart(userId);
-            return Ok(new { Message = "Cart cleared." });
+            _cartService.ClearCart(GetCurrentUserId());
+            return RedirectToAction(nameof(Index));
+        }
+
+        // Helper to get the logged-in user’s ID
+        private int GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? throw new InvalidOperationException("User ID claim missing");
+            return int.Parse(claim);
         }
     }
 }

@@ -1,16 +1,16 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using System.Text;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OnlineElectronicsStore.Data;
-using OnlineElectronicsStore.Services;
 using OnlineElectronicsStore.Services.Implementations;
 using OnlineElectronicsStore.Services.Interfaces;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 🛠 Register services
+// 🛠 Application services (keep all your I*Service registrations)
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -20,11 +20,12 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
-// 🔐 JWT config
+// 🔐 Authentication: JWT + Cookies
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddAuthentication(options =>
 {
+    // Default to JWT for API calls
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
 })
@@ -38,67 +39,88 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings["Issuer"],
         ValidAudience = jwtSettings["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
+        IssuerSigningKey = new SymmetricSecurityKey(
+                                      Encoding.UTF8.GetBytes(jwtSettings["Key"]!))
     };
+})
+// Also enable cookie auth for MVC pages (AccountController)
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
+{
+    opts.LoginPath = "/Account/Login";
+    opts.LogoutPath = "/Account/Logout";
+    opts.ExpireTimeSpan = TimeSpan.FromHours(1);
 });
 
 builder.Services.AddAuthorization();
 
-// 🌐 Enable CORS for local + deployed frontend
+// 🌐 CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins(
-            "http://localhost:3000", // React dev server
-            "https://onlineelectronicsstoresolution.onrender.com" // Render frontend
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-    });
+    options.AddPolicy("AllowFrontend", p =>
+        p.AllowAnyOrigin()
+         .AllowAnyHeader()
+         .AllowAnyMethod());
 });
 
-// 📦 Database
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// 📦 EF Core
+builder.Services.AddDbContext<AppDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 📘 Swagger
-builder.Services.AddControllers();
+// 📘 Swagger + API + MVC
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Logging.ClearProviders();
-builder.Logging.AddConsole();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Online Electronics Store API",
+        Version = "v1"
+    });
+});
+builder.Services.AddControllersWithViews();  // <-- MVC + API
 
 var app = builder.Build();
 
-// 🧱 Run migrations
+// 🧱 Apply migrations on startup
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        dbContext.Database.Migrate();
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while migrating the database.");
-    }
+    try { db.Database.Migrate(); }
+    catch (Exception ex) { logger.LogError(ex, "Migration failed"); }
 }
 
-// 🧩 Middleware
-app.UseSwagger();
-app.UseSwaggerUI(c =>
+// 🎯 Middleware pipeline
+if (app.Environment.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1");
-});
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Online Electronics Store API V1"));
+}
+else
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
 
-app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+app.UseRouting();
 app.UseCors("AllowFrontend");
+
+// Authentication → Authorization
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
-app.Urls.Add("http://*:80");
 
-app.Run("http://0.0.0.0:80");
+// MVC routes (for Razor Views & AccountController)
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Attribute‐routed API controllers
+app.MapControllers();
+
+// Listen on port 8080
+app.Urls.Add("http://*:8080");
+app.Run("http://0.0.0.0:8080");

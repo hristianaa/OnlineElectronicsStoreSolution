@@ -8,17 +8,19 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+\[Route("api/\[controller]")]
+\[ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private readonly IConfiguration _configuration;
+        private readonly AppDbContext \_context;
+private readonly IConfiguration \_configuration;
 
-        public AuthController(AppDbContext context, IConfiguration configuration)
+```
+    public AuthController(AppDbContext context, IConfiguration configuration)
         {
             _context = context;
             _configuration = configuration;
@@ -67,10 +69,10 @@ namespace OnlineElectronicsStore.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
-            };
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -86,4 +88,6 @@ namespace OnlineElectronicsStore.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
+```
+
 }
