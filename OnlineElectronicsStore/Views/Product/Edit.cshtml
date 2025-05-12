@@ -1,0 +1,18 @@
+﻿@model OnlineElectronicsStore.Models.Product
+@{
+    ViewData["Title"] = "Edit Product";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<form asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+    <!-- repeat all fields from Create -->
+    <!-- ... -->
+    <button type="submit" class="btn btn-success">Save</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
