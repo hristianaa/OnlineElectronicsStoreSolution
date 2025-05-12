@@ -12,19 +12,23 @@ namespace OnlineElectronicsStore.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly IAuthService _authService;
-        private readonly IUserService _userService;
+        private readonly IAuthService _auth;
+        private readonly IUserService _users;
 
-        public AccountController(IAuthService authService, IUserService userService)
+        public AccountController(
+            IAuthService authService,
+            IUserService userService)
         {
-            _authService = authService;
-            _userService = userService;
+            _auth = authService;
+            _users = userService;
         }
 
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
-            => View(new LoginViewModel { ReturnUrl = returnUrl });
+        {
+            return View(new LoginViewModel { ReturnUrl = returnUrl });
+        }
 
         // POST: /Account/Login
         [HttpPost, ValidateAntiForgeryToken]
@@ -33,14 +37,15 @@ namespace OnlineElectronicsStore.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            var user = await _authService.ValidateCredentialsAsync(vm.Email, vm.Password);
+            // validate against your AuthService
+            var user = await _auth.ValidateCredentialsAsync(vm.Email, vm.Password);
             if (user == null)
             {
                 ModelState.AddModelError("", "Invalid email or password.");
                 return View(vm);
             }
 
-            // Build claims and sign in with cookie
+            // build cookie
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -48,22 +53,25 @@ namespace OnlineElectronicsStore.Controllers
                 new Claim(ClaimTypes.Email,          user.Email),
                 new Claim(ClaimTypes.Role,           user.Role)
             };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var identity = new ClaimsIdentity(
+                claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(identity));
 
-            // Redirect back if local, or to Home
+            // redirect back or to Home
             if (!string.IsNullOrEmpty(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
                 return Redirect(vm.ReturnUrl);
-
             return RedirectToAction("Index", "Home");
         }
 
         // GET: /Account/Register
         [HttpGet]
         public IActionResult Register()
-            => View(new RegisterViewModel());
+        {
+            return View(new RegisterViewModel());
+        }
 
         // POST: /Account/Register
         [HttpPost, ValidateAntiForgeryToken]
@@ -72,14 +80,14 @@ namespace OnlineElectronicsStore.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            // Prevent duplicate emails
-            if (await _userService.GetByEmailAsync(vm.Email) != null)
+            // duplicate?
+            if (await _users.GetByEmailAsync(vm.Email) != null)
             {
                 ModelState.AddModelError(nameof(vm.Email), "Email already in use.");
                 return View(vm);
             }
 
-            // Create the user
+            // hand off to AuthService
             var dto = new RegisterDto
             {
                 FullName = vm.FullName,
@@ -87,10 +95,10 @@ namespace OnlineElectronicsStore.Controllers
                 Password = vm.Password,
                 Role = "User"
             };
-            var newUser = await _authService.RegisterUserAsync(dto);
+            var newUser = await _auth.RegisterUserAsync(dto);
 
-            // Optionally, sign them in immediately:
-            // await _authService.SignInWithCookieAsync(HttpContext, newUser);
+            // (optional) auto-login:
+            // await _auth.SignInWithCookieAsync(HttpContext, newUser);
 
             return RedirectToAction(nameof(Login));
         }
@@ -99,13 +107,16 @@ namespace OnlineElectronicsStore.Controllers
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index", "Home");
         }
 
         // GET: /Account/AccessDenied
         [HttpGet]
         public IActionResult AccessDenied()
-            => View();
+        {
+            return View();
+        }
     }
 }

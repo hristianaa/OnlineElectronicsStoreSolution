@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using OnlineElectronicsStore.Models;
-using OnlineElectronicsStore.Models.ViewModels;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
@@ -41,8 +40,16 @@ namespace OnlineElectronicsStore.Controllers
             var model = await _products.GetAllAsync();
             if (!model.Any())
                 return View("Empty");
-
             return View(model);
+        }
+
+        // GET /Products/Details/5
+        [AllowAnonymous]
+        public async Task<IActionResult> Details(int id)
+        {
+            var product = await _products.GetByIdAsync(id);
+            if (product == null) return NotFound();
+            return View(product);
         }
 
         // GET /Products/Create
@@ -60,7 +67,7 @@ namespace OnlineElectronicsStore.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             Product product,
-            List<IFormFile> Photos)
+            List<IFormFile>? Photos)
         {
             if (!ModelState.IsValid)
             {
@@ -69,30 +76,12 @@ namespace OnlineElectronicsStore.Controllers
                 return View(product);
             }
 
-            // 1) Save product
+            // 1) Save product to get ID
             var created = await _products.AddAsync(product);
 
             // 2) Save uploaded photos
             if (Photos?.Any() == true)
-            {
-                var uploadDir = Path.Combine(_env.WebRootPath, "images", "products");
-                Directory.CreateDirectory(uploadDir);
-
-                foreach (var file in Photos)
-                {
-                    if (file.Length > 0)
-                    {
-                        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                        var filePath = Path.Combine(uploadDir, fileName);
-                        using var stream = System.IO.File.Create(filePath);
-                        await file.CopyToAsync(stream);
-
-                        // Persist photo record
-                        await _photoService.AddPhotoAsync(created.Id,
-                            $"/images/products/{fileName}");
-                    }
-                }
-            }
+                await SavePhotosAsync(created.Id, Photos);
 
             return RedirectToAction(nameof(Index));
         }
@@ -116,10 +105,9 @@ namespace OnlineElectronicsStore.Controllers
         public async Task<IActionResult> Edit(
             int id,
             Product product,
-            List<IFormFile> Photos)
+            List<IFormFile>? Photos)
         {
             if (id != product.Id) return BadRequest();
-
             if (!ModelState.IsValid)
             {
                 ViewBag.Categories = new SelectList(
@@ -130,30 +118,75 @@ namespace OnlineElectronicsStore.Controllers
             var updated = await _products.UpdateAsync(product);
             if (!updated) return NotFound();
 
-            // Handle new uploads (existing photos remain)
             if (Photos?.Any() == true)
-            {
-                var uploadDir = Path.Combine(_env.WebRootPath, "images", "products");
-                Directory.CreateDirectory(uploadDir);
-
-                foreach (var file in Photos)
-                {
-                    if (file.Length > 0)
-                    {
-                        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                        var filePath = Path.Combine(uploadDir, fileName);
-                        using var stream = System.IO.File.Create(filePath);
-                        await file.CopyToAsync(stream);
-
-                        await _photoService.AddPhotoAsync(product.Id,
-                            $"/images/products/{fileName}");
-                    }
-                }
-            }
+                await SavePhotosAsync(product.Id, Photos);
 
             return RedirectToAction(nameof(Index));
         }
 
-        // (Details/Delete actions omitted for brevity)
+        // GET /Products/Delete/5
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var product = await _products.GetByIdAsync(id);
+            if (product == null) return NotFound();
+            return View(product);
+        }
+
+        // POST /Products/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [Authorize(Roles = "Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteConfirmed(int id)
+        {
+            var product = await _products.GetByIdAsync(id);
+            if (product == null) return NotFound();
+
+            // 1) Delete photo files & records
+            foreach (var photo in product.Photos)
+            {
+                var physical = Path.Combine(_env.WebRootPath, photo.Url.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                if (System.IO.File.Exists(physical))
+                    System.IO.File.Delete(physical);
+
+                await _photoService.DeletePhotoAsync(photo.Id);
+            }
+
+            // 2) Delete main image file if it points to wwwroot
+            if (!string.IsNullOrEmpty(product.MainImageUrl) && product.MainImageUrl.StartsWith("/images/"))
+            {
+                var mainPhys = Path.Combine(_env.WebRootPath,
+                    product.MainImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                if (System.IO.File.Exists(mainPhys))
+                    System.IO.File.Delete(mainPhys);
+            }
+
+            // 3) Delete the product entity
+            await _products.DeleteAsync(id);
+
+            return RedirectToAction(nameof(Index));
+        }
+
+      
+        private async Task SavePhotosAsync(int productId, List<IFormFile> photos)
+        {
+            var uploadDir = Path.Combine(_env.WebRootPath, "images", "products");
+            Directory.CreateDirectory(uploadDir);
+
+            foreach (var file in photos)
+            {
+                if (file.Length > 0)
+                {
+                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                    var filePath = Path.Combine(uploadDir, fileName);
+                    using var stream = System.IO.File.Create(filePath);
+                    await file.CopyToAsync(stream);
+
+                    await _photoService.AddPhotoAsync(
+                        productId,
+                        $"/images/products/{fileName}");
+                }
+            }
+        }
     }
 }

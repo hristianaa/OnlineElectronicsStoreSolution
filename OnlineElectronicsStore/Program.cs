@@ -22,6 +22,7 @@ builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductPhotoService, ProductPhotoService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 

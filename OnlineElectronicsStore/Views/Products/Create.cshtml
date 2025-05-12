@@ -1,6 +1,7 @@
 ﻿@model OnlineElectronicsStore.Models.Product
+
 @{
-    ViewData["Title"] = "Add Product";
+    ViewData["Title"] = "Add New Product";
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -11,41 +12,47 @@
         <input asp-for="Name" class="form-control" />
         <span asp-validation-for="Name" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="ShortDescription" class="form-label"></label>
         <textarea asp-for="ShortDescription" class="form-control"></textarea>
         <span asp-validation-for="ShortDescription" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="LongDescription" class="form-label"></label>
         <textarea asp-for="LongDescription" class="form-control"></textarea>
         <span asp-validation-for="LongDescription" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="Price" class="form-label"></label>
         <input asp-for="Price" class="form-control" />
         <span asp-validation-for="Price" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="Stock" class="form-label"></label>
         <input asp-for="Stock" class="form-control" />
         <span asp-validation-for="Stock" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
         <label asp-for="CategoryId" class="form-label"></label>
         <select asp-for="CategoryId" asp-items="ViewBag.Categories" class="form-select"></select>
         <span asp-validation-for="CategoryId" class="text-danger"></span>
     </div>
+
     <div class="mb-3">
-        <label>Main Image URL</label>
+        <label asp-for="MainImageUrl" class="form-label"></label>
         <input asp-for="MainImageUrl" class="form-control" />
         <span asp-validation-for="MainImageUrl" class="text-danger"></span>
     </div>
 
     <div class="mb-3">
-        <label>Upload Photos</label>
+        <label>Upload Product Photos</label>
         <input type="file" name="Photos" multiple class="form-control" />
-        <small class="form-text text-muted">You can select multiple images.</small>
+        <small class="form-text text-muted">Select one or more images to upload.</small>
     </div>
 
     <button type="submit" class="btn btn-success">Save</button>
@@ -55,3 +62,4 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }
+

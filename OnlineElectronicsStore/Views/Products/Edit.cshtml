@@ -1,15 +1,86 @@
 ﻿@model OnlineElectronicsStore.Models.Product
+
 @{
     ViewData["Title"] = "Edit Product";
 }
 
 <h1>@ViewData["Title"]</h1>
 
-<form asp-action="Edit" method="post">
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
-    <!-- repeat all fields from Create -->
-    <!-- ... -->
-    <button type="submit" class="btn btn-success">Save</button>
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="ShortDescription" class="form-label"></label>
+        <textarea asp-for="ShortDescription" class="form-control"></textarea>
+        <span asp-validation-for="ShortDescription" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="LongDescription" class="form-label"></label>
+        <textarea asp-for="LongDescription" class="form-control"></textarea>
+        <span asp-validation-for="LongDescription" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Price" class="form-label"></label>
+        <input asp-for="Price" class="form-control" />
+        <span asp-validation-for="Price" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Stock" class="form-label"></label>
+        <input asp-for="Stock" class="form-control" />
+        <span asp-validation-for="Stock" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CategoryId" class="form-label"></label>
+        <select asp-for="CategoryId" asp-items="ViewBag.Categories" class="form-select"></select>
+        <span asp-validation-for="CategoryId" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label>Current Main Image</label><br />
+        @if (!string.IsNullOrEmpty(Model.MainImageUrl))
+        {
+            <img src="@Model.MainImageUrl" style="max-height:100px;" alt="Main Image" />
+        }
+        <div class="mt-2">
+            <label asp-for="MainImageUrl" class="form-label">Change Main Image URL</label>
+            <input asp-for="MainImageUrl" class="form-control" />
+            <span asp-validation-for="MainImageUrl" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Existing Photos</label>
+        <div>
+            @foreach (var photo in Model.Photos)
+            {
+                <div class="d-inline-block text-center me-2">
+                    <img src="@photo.Url" style="max-height:75px;" alt="Photo" /><br />
+                    <label>
+                        <input type="checkbox" name="DeletePhotoIds" value="@photo.Id" />
+                        Delete
+                    </label>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label>Upload New Photos</label>
+        <input type="file" name="Photos" multiple class="form-control" />
+        <small class="form-text text-muted">Select additional images to upload.</small>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
 </form>
 

@@ -37,7 +37,7 @@ namespace OnlineElectronicsStore.Models
 
         // ← if you later want to store multiple photos per product
         public ICollection<ProductPhoto> Photos { get; set; } = new List<ProductPhoto>();
-
+      
         // FK to Category
         [ForeignKey(nameof(Category))]
         [Display(Name = "Category")]
