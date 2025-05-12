@@ -27,7 +27,7 @@ namespace OnlineElectronicsStore.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // 🔄 1. Global mapping: all DateTime/DateTime? → datetime2 + GETDATE() default for non-nullable
+            // 1. Global mapping: DateTime → datetime2 + GETDATE()
             var dateProps = modelBuilder.Model
                 .GetEntityTypes()
                 .SelectMany(t => t.GetProperties())
@@ -40,7 +40,7 @@ namespace OnlineElectronicsStore.Data
                     prop.SetDefaultValueSql("GETDATE()");
             }
 
-            // 🧠 2. Relationships
+            // 2. Relationships
             modelBuilder.Entity<OrderItem>()
                 .HasOne(o => o.ParentOrder)
                 .WithMany(p => p.OrderItems)
@@ -51,7 +51,7 @@ namespace OnlineElectronicsStore.Data
                 .WithMany()
                 .HasForeignKey(o => o.ProductId);
 
-            // 📦 3. Seed Categories
+            // 3. Seed Categories
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Laptops" },
                 new Category { Id = 2, Name = "PC Components" },
@@ -61,37 +61,236 @@ namespace OnlineElectronicsStore.Data
                 new Category { Id = 6, Name = "Gaming Accessories" }
             );
 
-            // 🖥️ 4. Seed Products
+            // 4. Seed Products with Short & Long Descriptions + MainImageUrl
             modelBuilder.Entity<Product>().HasData(
-                new Product { Id = 1, Name = "Gaming Laptop", Description = "Powerful laptop designed for high-performance gaming.", Price = 1200, Stock = 15, CategoryId = 1 },
-                new Product { Id = 2, Name = "Business Laptop", Description = "Lightweight laptop designed for business professionals.", Price = 950, Stock = 20, CategoryId = 1 },
-                new Product { Id = 3, Name = "UltraBook Pro", Description = "Compact and powerful ultrabook for travel and work.", Price = 1500, Stock = 10, CategoryId = 1 },
-                new Product { Id = 4, Name = "Graphics Card RTX 4070", Description = "High-performance graphics card for gaming and rendering.", Price = 600, Stock = 25, CategoryId = 2 },
-                new Product { Id = 5, Name = "Intel i7 Processor", Description = "12th Gen Intel i7 processor for enhanced performance.", Price = 400, Stock = 30, CategoryId = 2 },
-                new Product { Id = 6, Name = "750W Power Supply", Description = "Reliable power supply unit for high-end gaming PCs.", Price = 100, Stock = 40, CategoryId = 2 },
-                new Product { Id = 7, Name = "Mechanical Keyboard", Description = "Durable mechanical keyboard with RGB lighting.", Price = 80, Stock = 50, CategoryId = 3 },
-                new Product { Id = 8, Name = "Wireless Mouse", Description = "Ergonomic wireless mouse with precision tracking.", Price = 25, Stock = 100, CategoryId = 3 },
-                new Product { Id = 9, Name = "27-inch 4K Monitor", Description = "High-resolution monitor perfect for design and gaming.", Price = 300, Stock = 12, CategoryId = 3 },
-                new Product { Id = 10, Name = "iPhone 14 Pro", Description = "Latest iPhone with improved camera and performance.", Price = 1100, Stock = 20, CategoryId = 4 },
-                new Product { Id = 11, Name = "Samsung Galaxy S23", Description = "Samsung flagship smartphone with enhanced display.", Price = 1000, Stock = 18, CategoryId = 4 },
-                new Product { Id = 12, Name = "Google Pixel 7", Description = "Google's premium smartphone with superior AI features.", Price = 850, Stock = 15, CategoryId = 4 },
-                new Product { Id = 13, Name = "Sony WH-1000XM5", Description = "Noise-cancelling wireless headphones with premium sound.", Price = 300, Stock = 22, CategoryId = 5 },
-                new Product { Id = 14, Name = "JBL Bluetooth Speaker", Description = "Portable Bluetooth speaker with powerful bass.", Price = 150, Stock = 35, CategoryId = 5 },
-                new Product { Id = 15, Name = "Gaming Headset", Description = "Immersive gaming headset with surround sound.", Price = 70, Stock = 40, CategoryId = 6 },
-                new Product { Id = 16, Name = "Racing Wheel Controller", Description = "Realistic racing wheel for enhanced driving simulation.", Price = 250, Stock = 5, CategoryId = 6 },
-                new Product { Id = 17, Name = "RGB Mousepad", Description = "Customizable RGB mousepad for gamers.", Price = 30, Stock = 80, CategoryId = 6 }
+                new Product
+                {
+                    Id = 1,
+                    Name = "Gaming Laptop",
+                    ShortDescription = "High-end gaming laptop with RTX graphics",
+                    LongDescription = "A powerhouse machine featuring an NVIDIA RTX GPU, 16 GB RAM, and a 1 TB SSD—perfect for top-tier gaming and streaming.",
+                    MainImageUrl = "/images/products/1-main.jpg",
+                    Price = 1200m,
+                    Stock = 15,
+                    CategoryId = 1
+                },
+                new Product
+                {
+                    Id = 2,
+                    Name = "Business Laptop",
+                    ShortDescription = "Lightweight, portable business laptop",
+                    LongDescription = "An ultra-portable device with 14\" FHD display, 8 GB RAM, and long battery life—ideal for professionals on the move.",
+                    MainImageUrl = "/images/products/2-main.jpg",
+                    Price = 950m,
+                    Stock = 20,
+                    CategoryId = 1
+                },
+                new Product
+                {
+                    Id = 3,
+                    Name = "UltraBook Pro",
+                    ShortDescription = "Compact and powerful ultrabook",
+                    LongDescription = "Slim design with 11th Gen Intel Core, 512 GB SSD, and up to 12 hours of battery life—great for travel and productivity.",
+                    MainImageUrl = "/images/products/3-main.jpg",
+                    Price = 1500m,
+                    Stock = 10,
+                    CategoryId = 1
+                },
+                new Product
+                {
+                    Id = 4,
+                    Name = "Graphics Card RTX 4070",
+                    ShortDescription = "Next-gen graphics card for gaming",
+                    LongDescription = "Equipped with 8 GB GDDR6, DLSS support, and ray-tracing cores for ultra-realistic graphics in the latest games.",
+                    MainImageUrl = "/images/products/4-main.jpg",
+                    Price = 600m,
+                    Stock = 25,
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Id = 5,
+                    Name = "Intel i7 Processor",
+                    ShortDescription = "12th Gen Intel Core i7 CPU",
+                    LongDescription = "Offers 8 cores and 16 threads, up to 4.9 GHz Turbo Boost, and support for DDR5 memory—ideal for both gaming and content creation.",
+                    MainImageUrl = "/images/products/5-main.jpg",
+                    Price = 400m,
+                    Stock = 30,
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Id = 6,
+                    Name = "750W Power Supply",
+                    ShortDescription = "High-efficiency ATX power supply",
+                    LongDescription = "80 Plus Gold certified PSU with modular cables, Japanese capacitors, and silent fan for reliable, quiet performance.",
+                    MainImageUrl = "/images/products/6-main.jpg",
+                    Price = 100m,
+                    Stock = 40,
+                    CategoryId = 2
+                },
+                new Product
+                {
+                    Id = 7,
+                    Name = "Mechanical Keyboard",
+                    ShortDescription = "RGB mechanical gaming keyboard",
+                    LongDescription = "Durable switches with customizable RGB backlighting, programmable macros, and detachable wrist rest for comfort.",
+                    MainImageUrl = "/images/products/7-main.jpg",
+                    Price = 80m,
+                    Stock = 50,
+                    CategoryId = 3
+                },
+                new Product
+                {
+                    Id = 8,
+                    Name = "Wireless Mouse",
+                    ShortDescription = "Ergonomic 2.4 GHz wireless mouse",
+                    LongDescription = "Features adjustable DPI up to 16,000, contoured shape, and up to 60 hours of battery life—perfect for work or play.",
+                    MainImageUrl = "/images/products/8-main.jpg",
+                    Price = 25m,
+                    Stock = 100,
+                    CategoryId = 3
+                },
+                new Product
+                {
+                    Id = 9,
+                    Name = "27-inch 4K Monitor",
+                    ShortDescription = "Ultra HD IPS display monitor",
+                    LongDescription = "27\" 3840×2160 panel with HDR10 support, 95% DCI-P3, and built-in speakers—great for design, gaming, and streaming.",
+                    MainImageUrl = "/images/products/9-main.jpg",
+                    Price = 300m,
+                    Stock = 12,
+                    CategoryId = 3
+                },
+                new Product
+                {
+                    Id = 10,
+                    Name = "iPhone 14 Pro",
+                    ShortDescription = "Apple's flagship smartphone",
+                    LongDescription = "Featuring a 6.1\" Super Retina XDR display, A16 Bionic chip, Pro camera system with 48 MP main sensor, and Dynamic Island.",
+                    MainImageUrl = "/images/products/10-main.jpg",
+                    Price = 1100m,
+                    Stock = 20,
+                    CategoryId = 4
+                },
+                new Product
+                {
+                    Id = 11,
+                    Name = "Samsung Galaxy S23",
+                    ShortDescription = "Samsung flagship with dynamic AMOLED",
+                    LongDescription = "6.1\" Dynamic AMOLED 2X, Snapdragon 8 Gen 2, triple camera setup, and 3900 mAh battery with 25 W fast charging.",
+                    MainImageUrl = "/images/products/11-main.jpg",
+                    Price = 1000m,
+                    Stock = 18,
+                    CategoryId = 4
+                },
+                new Product
+                {
+                    Id = 12,
+                    Name = "Google Pixel 7",
+                    ShortDescription = "Google's AI-powered smartphone",
+                    LongDescription = "6.3\" OLED display, Google Tensor G2 chip, advanced camera features like Magic Eraser, and 30 W charging.",
+                    MainImageUrl = "/images/products/12-main.jpg",
+                    Price = 850m,
+                    Stock = 15,
+                    CategoryId = 4
+                },
+                new Product
+                {
+                    Id = 13,
+                    Name = "Sony WH-1000XM5",
+                    ShortDescription = "Premium noise-cancelling headphones",
+                    LongDescription = "Industry-leading ANC, 30 hours of battery life, multi-device pairing, and high-resolution audio support.",
+                    MainImageUrl = "/images/products/13-main.jpg",
+                    Price = 300m,
+                    Stock = 22,
+                    CategoryId = 5
+                },
+                new Product
+                {
+                    Id = 14,
+                    Name = "JBL Bluetooth Speaker",
+                    ShortDescription = "Portable waterproof speaker",
+                    LongDescription = "Compact design with JBL Signature Sound, 12 hours of playtime, and IPX7 water resistance—ideal for outdoor use.",
+                    MainImageUrl = "/images/products/14-main.jpg",
+                    Price = 150m,
+                    Stock = 35,
+                    CategoryId = 5
+                },
+                new Product
+                {
+                    Id = 15,
+                    Name = "Gaming Headset",
+                    ShortDescription = "Over-ear RGB gaming headset",
+                    LongDescription = "Virtual 7.1 surround sound, noise-cancelling mic, memory foam earcups, and USB/3.5 mm connectivity.",
+                    MainImageUrl = "/images/products/15-main.jpg",
+                    Price = 70m,
+                    Stock = 40,
+                    CategoryId = 6
+                },
+                new Product
+                {
+                    Id = 16,
+                    Name = "Racing Wheel Controller",
+                    ShortDescription = "Force-feedback racing wheel",
+                    LongDescription = "Realistic force feedback, pedal set with clutch, and adjustable wheel angle—perfect for driving simulators.",
+                    MainImageUrl = "/images/products/16-main.jpg",
+                    Price = 250m,
+                    Stock = 5,
+                    CategoryId = 6
+                },
+                new Product
+                {
+                    Id = 17,
+                    Name = "RGB Mousepad",
+                    ShortDescription = "Customizable RGB mousepad for gamers",
+                    LongDescription = "Features dynamic lighting effects, a non-slip rubber bottom, and a smooth surface for precise mouse control.",
+                    MainImageUrl = "/images/products/17-main.jpg",
+                    Price = 30m,
+                    Stock = 80,
+                    CategoryId = 6
+                }
             );
 
-            // 🏷️ 5. Seed Discounts
+
+            // 5. Seed Discounts
             modelBuilder.Entity<Discount>().HasData(
-                new Discount { Id = 1, DiscountCode = "WELCOME10", DiscountAmount = 10.00M, ExpiryDate = new DateTime(2025, 12, 31), ProductId = 1 },
-                new Discount { Id = 2, DiscountCode = "SUMMER20", DiscountAmount = 20.00M, ExpiryDate = new DateTime(2025, 6, 30), ProductId = 3 }
+                new Discount
+                {
+                    Id = 1,
+                    DiscountCode = "WELCOME10",
+                    DiscountAmount = 10.00M,
+                    ExpiryDate = new DateTime(2025, 12, 31),
+                    ProductId = 1
+                },
+                new Discount
+                {
+                    Id = 2,
+                    DiscountCode = "SUMMER20",
+                    DiscountAmount = 20.00M,
+                    ExpiryDate = new DateTime(2025, 6, 30),
+                    ProductId = 3
+                }
             );
 
-            // 👥 6. Seed Users
+            // 6. Seed Users
             modelBuilder.Entity<User>().HasData(
-                new User { Id = 1, FullName = "Admin User", Email = "admin@example.com", Password = "Admin@123", Role = "Admin" },
-                new User { Id = 2, FullName = "John Doe", Email = "john.doe@example.com", Password = "User@123", Role = "User" }
+                new User
+                {
+                    Id = 1,
+                    FullName = "Admin User",
+                    Email = "admin@example.com",
+                    Password = "Admin@123",
+                    Role = "Admin"
+                },
+                new User
+                {
+                    Id = 2,
+                    FullName = "John Doe",
+                    Email = "john.doe@example.com",
+                    Password = "User@123",
+                    Role = "User"
+                }
             );
         }
     }

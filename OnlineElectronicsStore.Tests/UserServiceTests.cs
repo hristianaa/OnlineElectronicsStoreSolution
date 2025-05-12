@@ -4,6 +4,7 @@ using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Implementations;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace OnlineElectronicsStore.Tests
@@ -13,7 +14,7 @@ namespace OnlineElectronicsStore.Tests
         private AppDbContext GetInMemoryDbContext()
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
 
             var context = new AppDbContext(options);
@@ -23,8 +24,8 @@ namespace OnlineElectronicsStore.Tests
             if (!context.Users.Any())
             {
                 context.Users.AddRange(
-                    new User { Id = 1, Email = "admin@example.com", Password = "Admin@123", FullName = "Admin", Role = "Admin" },
-                    new User { Id = 2, Email = "user@example.com", Password = "User@123", FullName = "User", Role = "User" }
+                    new User { Id = 1, FullName = "Admin", Email = "admin@example.com", Password = "Admin@123", Role = "Admin" },
+                    new User { Id = 2, FullName = "User", Email = "user@example.com", Password = "User@123", Role = "User" }
                 );
                 context.SaveChanges();
             }
@@ -33,31 +34,32 @@ namespace OnlineElectronicsStore.Tests
         }
 
         [Fact]
-        public void GetAll_ShouldReturnUsers()
+        public async Task GetAllAsync_ShouldReturnTwoUsers()
         {
             // Arrange
             var context = GetInMemoryDbContext();
             var service = new UserService(context);
 
             // Act
-            var users = service.GetAll();
+            var users = await service.GetAllAsync();
 
             // Assert
             Assert.Equal(2, users.Count());
         }
 
         [Fact]
-        public void Delete_ShouldRemoveUser()
+        public async Task DeleteAsync_ShouldRemoveUser()
         {
             // Arrange
             var context = GetInMemoryDbContext();
             var service = new UserService(context);
 
             // Act
-            service.Delete(2); // Remove the "User"
+            var success = await service.DeleteAsync(2);
 
             // Assert
-            Assert.Single(context.Users); // Only "Admin" should remain
+            Assert.True(success);
+            Assert.Single(context.Users);
             Assert.DoesNotContain(context.Users, u => u.Id == 2);
         }
     }

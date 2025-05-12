@@ -1,7 +1,4 @@
-﻿using System;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
@@ -12,69 +9,54 @@ namespace OnlineElectronicsStore.Controllers
     [Authorize]
     public class PaymentsController : Controller
     {
-        private readonly IPaymentService _paymentService;
+        private readonly IPaymentService _payments;
+
         public PaymentsController(IPaymentService paymentService)
         {
-            _paymentService = paymentService;
+            _payments = paymentService;
         }
 
-        // GET: /Payments
-        public IActionResult Index()
+        // GET /Payments
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Index()
         {
-            var payments = _paymentService.GetAll().ToList();
-            return View(payments);
+            var list = await _payments.GetAllAsync();
+            return View(list);
         }
 
-        // GET: /Payments/Details/5
-        public IActionResult Details(int id)
+        // GET /Payments/Details/{id}
+        public async Task<IActionResult> Details(int id)
         {
-            var payment = _paymentService.GetById(id);
-            if (payment == null) return NotFound();
-            return View(payment);
+            var p = await _payments.GetByIdAsync(id);
+            if (p == null) return NotFound();
+            return View(p);
         }
 
-        // GET: /Payments/Create
-        public IActionResult Create()
-        {
-            return View(new Payment());
-        }
+        // GET /Payments/Create
+        public IActionResult Create() => View(new Payment());
 
-        // POST: /Payments/Create
+        // POST /Payments/Create
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult Create(Payment model)
+        public async Task<IActionResult> Create(Payment model)
         {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            _paymentService.Create(model);
+            if (!ModelState.IsValid) return View(model);
+            await _payments.CreateAsync(model);
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Payments/MarkPaid/5
+        // POST /Payments/MarkPaid/{id}
         [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult MarkPaid(int id)
+        public async Task<IActionResult> MarkPaid(int id)
         {
-            var payment = _paymentService.GetById(id);
-            if (payment == null) return NotFound();
-
-            _paymentService.MarkAsPaid(id);
+            await _payments.MarkAsPaidAsync(id);
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Payments/Delete/5
-        public IActionResult Delete(int id)
+        // POST /Payments/Delete/{id}
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
         {
-            var payment = _paymentService.GetById(id);
-            if (payment == null) return NotFound();
-            return View(payment);
-        }
-
-        // POST: /Payments/Delete/5
-        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
-        {
-            _paymentService.Delete(id);
+            await _payments.DeleteAsync(id);
             return RedirectToAction(nameof(Index));
         }
     }

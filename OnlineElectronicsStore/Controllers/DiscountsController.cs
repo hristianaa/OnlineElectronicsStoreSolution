@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
@@ -10,59 +9,56 @@ namespace OnlineElectronicsStore.Controllers
     [Authorize(Roles = "Admin")]
     public class DiscountsController : Controller
     {
-        private readonly IDiscountService _discountService;
+        private readonly IDiscountService _discounts;
+
         public DiscountsController(IDiscountService discountService)
         {
-            _discountService = discountService;
+            _discounts = discountService;
         }
 
-        // GET: /Discounts
-        public IActionResult Index()
+        // GET /Discounts
+        public async Task<IActionResult> Index()
         {
-            var discounts = _discountService.GetAll().ToList();
-            return View(discounts);
+            var list = await _discounts.GetAllAsync();
+            return View(list);
         }
 
-        // GET: /Discounts/Details/ABC123
-        public IActionResult Details(string code)
+        // GET /Discounts/Details/{code}
+        public async Task<IActionResult> Details(string code)
         {
-            var discount = _discountService.GetByCode(code);
-            if (discount == null) return NotFound();
-            return View(discount);
+            var d = await _discounts.GetByCodeAsync(code);
+            if (d == null) return NotFound();
+            return View(d);
         }
 
-        // GET: /Discounts/Create
-        public IActionResult Create()
-        {
-            return View(new Discount());
-        }
+        // GET /Discounts/Create
+        public IActionResult Create() => View(new Discount());
 
-        // POST: /Discounts/Create
+        // POST /Discounts/Create
         [HttpPost, ValidateAntiForgeryToken]
-        public IActionResult Create(Discount model)
+        public async Task<IActionResult> Create(Discount model)
         {
-            if (!ModelState.IsValid)
-                return View(model);
-
-            _discountService.Create(model);
+            if (!ModelState.IsValid) return View(model);
+            await _discounts.CreateAsync(model);
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /Discounts/Delete/5
-        public IActionResult Delete(int id)
+        // GET /Discounts/Delete/{id}
+        public async Task<IActionResult> Delete(int id)
         {
-            var discount = _discountService.GetAll().FirstOrDefault(d => d.Id == id);
-            if (discount == null) return NotFound();
-            return View(discount);
+            var all = await _discounts.GetAllAsync();
+            var d = all.FirstOrDefault(x => x.Id == id);
+            if (d == null) return NotFound();
+            return View(d);
         }
 
-        // POST: /Discounts/Delete/5
+        // POST /Discounts/Delete/{id}
         [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
-        public IActionResult DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            _discountService.Delete(id);
+            var ok = await _discounts.DeleteAsync(id);
+            if (!ok) return NotFound();
             return RedirectToAction(nameof(Index));
         }
     }
 }
-

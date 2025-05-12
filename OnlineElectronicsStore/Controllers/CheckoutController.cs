@@ -1,74 +1,46 @@
-﻿using System;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Services.Interfaces;
-using OnlineElectronicsStore.DTOs;
 
 namespace OnlineElectronicsStore.Controllers
 {
     [Authorize]
     public class CheckoutController : Controller
     {
-        private readonly ICheckoutService _checkoutService;
+        private readonly ICheckoutService _checkout;
 
         public CheckoutController(ICheckoutService checkoutService)
         {
-            _checkoutService = checkoutService;
+            _checkout = checkoutService;
         }
 
         // GET: /Checkout
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            // Optionally, get a summary (cart total, items, etc.)
-            // var summary = await _checkoutService.GetCheckoutSummaryAsync(GetCurrentUserId());
-            // return View(summary);
-
-            return View();  // Views/Checkout/Index.cshtml
+            return View();  // your cart/checkout summary view
         }
 
-        // POST: /Checkout
+        // POST: /Checkout/PlaceOrder
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(CheckoutDto model)
+        public async Task<IActionResult> PlaceOrder()
         {
-            if (!ModelState.IsValid)
-            {
-                // re-display the form with validation errors
-                return View(model);
-            }
-
-            var userId = GetCurrentUserId();
-            bool success;
-            try
-            {
-                success = await _checkoutService.PlaceOrderAsync(userId);
-            }
-            catch (Exception ex)
-            {
-                // log ex as needed
-                ModelState.AddModelError("", "An error occurred while placing your order.");
-                return View(model);
-            }
-
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var success = await _checkout.PlaceOrderAsync(userId);
             if (success)
-                return RedirectToAction(nameof(Confirmation));
-
-            ModelState.AddModelError("", "Failed to place the order. Please try again.");
-            return View(model);
+                return RedirectToAction("OrderConfirmation");
+            else
+            {
+                TempData["Error"] = "Your cart was empty.";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
-        // GET: /Checkout/Confirmation
-        public IActionResult Confirmation()
+        // GET: /Checkout/OrderConfirmation
+        public IActionResult OrderConfirmation()
         {
-            return View(); // Views/Checkout/Confirmation.cshtml
-        }
-
-        private int GetCurrentUserId()
-        {
-            var id = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(id, out var userId) ? userId : throw new InvalidOperationException("User ID missing");
+            return View();
         }
     }
 }
-
