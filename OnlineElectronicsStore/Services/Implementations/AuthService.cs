@@ -1,36 +1,58 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Security.Claims;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace OnlineElectronicsStore.Services.Implementations
 {
     public class AuthService : IAuthService
     {
-        private readonly AppDbContext _context;
+        private readonly AppDbContext _ctx;
         private readonly IConfiguration _config;
 
-        public AuthService(AppDbContext context, IConfiguration config)
+        public AuthService(AppDbContext ctx, IConfiguration config)
         {
-            _context = context;
+            _ctx = ctx;
             _config = config;
         }
 
         public async Task<User?> ValidateCredentialsAsync(string email, string password)
         {
-            // In prod, you'd hash & salt the password instead of plain text!
+            // in prod you’d hash/compare
             return await Task.FromResult(
-                _context.Users.FirstOrDefault(u =>
-                    u.Email == email &&
-                    u.Password == password));
+                _ctx.Users.FirstOrDefault(u => u.Email == email && u.Password == password));
+        }
+
+        public string GenerateJwtToken(User user)
+        {
+            var jwt = _config.GetSection("Jwt");
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwt["Issuer"],
+                audience: jwt["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwt["ExpiresInMinutes"]!)),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         public async Task<User> RegisterUserAsync(RegisterDto dto)
@@ -39,38 +61,12 @@ namespace OnlineElectronicsStore.Services.Implementations
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
-                Password = dto.Password, // consider hashing in prod
-                Role = string.IsNullOrEmpty(dto.Role) ? "User" : dto.Role
+                Password = dto.Password, // hash in prod!
+                Role = dto.Role
             };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            _ctx.Users.Add(user);
+            await _ctx.SaveChangesAsync();
             return user;
-        }
-
-        public string GenerateJwtToken(User user)
-        {
-            var jwtSection = _config.GetSection("Jwt");
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email,          user.Email),
-                new Claim(ClaimTypes.Name,           user.FullName),
-                new Claim(ClaimTypes.Role,           user.Role)
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: jwtSection["Issuer"],
-                audience: jwtSection["Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(double.Parse(jwtSection["ExpiresInMinutes"]!)),
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

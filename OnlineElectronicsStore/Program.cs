@@ -19,6 +19,8 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 
 // 🔐 Auth: JWT + Cookies
 var jwt = builder.Configuration.GetSection("Jwt");
