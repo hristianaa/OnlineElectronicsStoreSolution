@@ -1,57 +1,124 @@
-﻿using System.Security.Claims;
+﻿using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using OnlineElectronicsStore.DTOs;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
-    [Authorize]
+    [AllowAnonymous]
+    [Route("Cart")]
     public class CartController : Controller
     {
         private readonly ICartService _cart;
+        private readonly IProductService _products;
 
-        public CartController(ICartService cartService)
+        public CartController(ICartService cartService, IProductService productService)
         {
             _cart = cartService;
+            _products = productService;
         }
 
-        // GET: /Cart
+        // GET /Cart
         public async Task<IActionResult> Index()
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var cartDto = await _cart.GetCartDtoAsync(userId);
-            return View(cartDto);
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+                var items = await _cart.GetCartItemsAsync(userId);
+                return View(items);
+            }
+
+            ViewBag.Message = "Your cart is empty. Log in to save your items.";
+            return View(Enumerable.Empty<CartItem>());
         }
 
-        // POST: /Cart/Add
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Add(int productId, int quantity = 1)
+        // GET /Cart/Add/5
+        [HttpGet("Add/{productId}")]
+        public async Task<IActionResult> Add(int productId)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var success = await _cart.AddToCartAsync(userId, new CartItemDto
+            var prod = await _products.GetByIdAsync(productId);
+            if (prod == null) return NotFound();
+
+            ViewBag.Product = prod;
+            return View(new CartItem { ProductId = productId, Quantity = 1 });
+        }
+
+        // POST /Cart/Add
+        [HttpPost("Add")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Add(CartItem model)
+        {
+            if (!ModelState.IsValid)
             {
-                ProductId = productId,
-                Quantity = quantity
-            });
+                var prod = await _products.GetByIdAsync(model.ProductId);
+                ViewBag.Product = prod;
+                return View(model);
+            }
 
-            if (!success)
-                TempData["Error"] = "Could not add product to cart.";
+            // if anonymous, you could redirect to login; for now we force login
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Login", "Account", new { returnUrl = "/Cart" });
 
+            model.UserId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            await _cart.AddCartItemAsync(model);
             return RedirectToAction(nameof(Index));
         }
 
-        // POST: /Cart/Remove
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Remove(int productId)
+        // GET /Cart/Edit/5
+        [HttpGet("Edit/{id}")]
+        public async Task<IActionResult> Edit(int id)
         {
-            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            await _cart.RemoveFromCartAsync(userId, new CartItemDto
+            var item = await _cart.GetCartItemByIdAsync(id);
+            if (item == null) return NotFound();
+
+            ViewBag.Products = new SelectList(
+                await _products.GetAllAsync(),
+                "Id", "Name",
+                item.ProductId);
+
+            return View(item);
+        }
+
+        // POST /Cart/Edit/5
+        [HttpPost("Edit/{id}")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, CartItem model)
+        {
+            if (id != model.Id) return BadRequest();
+
+            if (!ModelState.IsValid)
             {
-                ProductId = productId,
-                Quantity = 0
-            });
+                ViewBag.Products = new SelectList(
+                    await _products.GetAllAsync(),
+                    "Id", "Name",
+                    model.ProductId);
+
+                return View(model);
+            }
+
+            await _cart.UpdateCartItemAsync(model);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET /Cart/Remove/5
+        [HttpGet("Remove/{id}")]
+        public async Task<IActionResult> Remove(int id)
+        {
+            var item = await _cart.GetCartItemByIdAsync(id);
+            if (item == null) return NotFound();
+            return View(item);
+        }
+
+        // POST /Cart/Remove/5
+        [HttpPost("Remove/{id}"), ActionName("Remove")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RemoveConfirmed(int id)
+        {
+            await _cart.RemoveCartItemAsync(id);
             return RedirectToAction(nameof(Index));
         }
     }

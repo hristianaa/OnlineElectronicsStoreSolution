@@ -1,0 +1,13 @@
+﻿@model OnlineElectronicsStore.Models.CartItem
+
+@{
+    ViewData["Title"] = "Remove from Cart";
+}
+
+<h1>Remove @Model.Product.Name?</h1>
+<p>Quantity: @Model.Quantity</p>
+
+<form asp-action="Remove" asp-route-id="@Model.Id" method="post">
+    <button type="submit" class="btn btn-danger">Remove</button>
+    <a asp-action="Index" class="btn btn-link">Cancel</a>
+</form>

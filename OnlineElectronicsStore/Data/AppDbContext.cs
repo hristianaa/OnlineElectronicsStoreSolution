@@ -42,14 +42,23 @@ namespace OnlineElectronicsStore.Data
 
             // 2. Relationships
             modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.ParentOrder)
-                .WithMany(p => p.OrderItems)
-                .HasForeignKey(o => o.OrderId);
+                .HasOne(oi => oi.ParentOrder)
+                .WithMany(o => o.OrderItems)
+                .HasForeignKey(oi => oi.OrderId);
 
             modelBuilder.Entity<OrderItem>()
-                .HasOne(o => o.Product)
+                .HasOne(oi => oi.Product)
                 .WithMany()
-                .HasForeignKey(o => o.ProductId);
+                .HasForeignKey(oi => oi.ProductId);
+
+            // 2.5 Decimal precision for money fields
+            modelBuilder.Entity<Order>()
+                .Property(o => o.TotalAmount)
+                .HasColumnType("decimal(18,2)");
+
+            modelBuilder.Entity<OrderItem>()
+                .Property(oi => oi.UnitPrice)
+                .HasColumnType("decimal(18,2)");
 
             // 3. Seed Categories
             modelBuilder.Entity<Category>().HasData(
@@ -61,7 +70,7 @@ namespace OnlineElectronicsStore.Data
                 new Category { Id = 6, Name = "Gaming Accessories" }
             );
 
-            // 4. Seed Products with Short & Long Descriptions + MainImageUrl
+            // 4. Seed Products with descriptions + images
             modelBuilder.Entity<Product>().HasData(
                 new Product
                 {
@@ -90,7 +99,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 3,
                     Name = "UltraBook Pro",
                     ShortDescription = "Compact and powerful ultrabook",
-                    LongDescription = "Slim design with 11th Gen Intel Core, 512 GB SSD, and up to 12 hours of battery life—great for travel and productivity.",
+                    LongDescription = "Slim design with 11th Gen Intel Core, 512 GB SSD, and up to 12 hours battery life—great for travel and productivity.",
                     MainImageUrl = "/images/products/3-main.jpg",
                     Price = 1500m,
                     Stock = 10,
@@ -112,7 +121,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 5,
                     Name = "Intel i7 Processor",
                     ShortDescription = "12th Gen Intel Core i7 CPU",
-                    LongDescription = "Offers 8 cores and 16 threads, up to 4.9 GHz Turbo Boost, and support for DDR5 memory—ideal for both gaming and content creation.",
+                    LongDescription = "Offers 8 cores and 16 threads, up to 4.9 GHz Turbo Boost, and DDR5 memory support—ideal for gaming and content creation.",
                     MainImageUrl = "/images/products/5-main.jpg",
                     Price = 400m,
                     Stock = 30,
@@ -123,7 +132,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 6,
                     Name = "750W Power Supply",
                     ShortDescription = "High-efficiency ATX power supply",
-                    LongDescription = "80 Plus Gold certified PSU with modular cables, Japanese capacitors, and silent fan for reliable, quiet performance.",
+                    LongDescription = "80 Plus Gold PSU with modular cables, Japanese capacitors, and silent fan for reliable, quiet performance.",
                     MainImageUrl = "/images/products/6-main.jpg",
                     Price = 100m,
                     Stock = 40,
@@ -145,7 +154,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 8,
                     Name = "Wireless Mouse",
                     ShortDescription = "Ergonomic 2.4 GHz wireless mouse",
-                    LongDescription = "Features adjustable DPI up to 16,000, contoured shape, and up to 60 hours of battery life—perfect for work or play.",
+                    LongDescription = "Adjustable DPI to 16,000, contoured shape, and up to 60 hours battery life—perfect for work or play.",
                     MainImageUrl = "/images/products/8-main.jpg",
                     Price = 25m,
                     Stock = 100,
@@ -156,7 +165,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 9,
                     Name = "27-inch 4K Monitor",
                     ShortDescription = "Ultra HD IPS display monitor",
-                    LongDescription = "27\" 3840×2160 panel with HDR10 support, 95% DCI-P3, and built-in speakers—great for design, gaming, and streaming.",
+                    LongDescription = "27\" 3840×2160 panel with HDR10, 95% DCI-P3, and built-in speakers—great for design, gaming, and streaming.",
                     MainImageUrl = "/images/products/9-main.jpg",
                     Price = 300m,
                     Stock = 12,
@@ -167,7 +176,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 10,
                     Name = "iPhone 14 Pro",
                     ShortDescription = "Apple's flagship smartphone",
-                    LongDescription = "Featuring a 6.1\" Super Retina XDR display, A16 Bionic chip, Pro camera system with 48 MP main sensor, and Dynamic Island.",
+                    LongDescription = "6.1\" Super Retina XDR, A16 Bionic chip, Pro camera system with 48 MP main sensor, and Dynamic Island.",
                     MainImageUrl = "/images/products/10-main.jpg",
                     Price = 1100m,
                     Stock = 20,
@@ -177,8 +186,8 @@ namespace OnlineElectronicsStore.Data
                 {
                     Id = 11,
                     Name = "Samsung Galaxy S23",
-                    ShortDescription = "Samsung flagship with dynamic AMOLED",
-                    LongDescription = "6.1\" Dynamic AMOLED 2X, Snapdragon 8 Gen 2, triple camera setup, and 3900 mAh battery with 25 W fast charging.",
+                    ShortDescription = "Samsung flagship with Dynamic AMOLED",
+                    LongDescription = "6.1\" AMOLED 2X, Snapdragon 8 Gen 2, triple-camera setup, 3900 mAh battery with 25 W charging.",
                     MainImageUrl = "/images/products/11-main.jpg",
                     Price = 1000m,
                     Stock = 18,
@@ -188,8 +197,8 @@ namespace OnlineElectronicsStore.Data
                 {
                     Id = 12,
                     Name = "Google Pixel 7",
-                    ShortDescription = "Google's AI-powered smartphone",
-                    LongDescription = "6.3\" OLED display, Google Tensor G2 chip, advanced camera features like Magic Eraser, and 30 W charging.",
+                    ShortDescription = "Google’s AI-powered smartphone",
+                    LongDescription = "6.3\" OLED, Google Tensor G2 chip, Magic Eraser, and 30 W fast charging.",
                     MainImageUrl = "/images/products/12-main.jpg",
                     Price = 850m,
                     Stock = 15,
@@ -200,7 +209,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 13,
                     Name = "Sony WH-1000XM5",
                     ShortDescription = "Premium noise-cancelling headphones",
-                    LongDescription = "Industry-leading ANC, 30 hours of battery life, multi-device pairing, and high-resolution audio support.",
+                    LongDescription = "Industry-leading ANC, 30 h battery life, multi-device pairing, and hi-res audio support.",
                     MainImageUrl = "/images/products/13-main.jpg",
                     Price = 300m,
                     Stock = 22,
@@ -211,7 +220,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 14,
                     Name = "JBL Bluetooth Speaker",
                     ShortDescription = "Portable waterproof speaker",
-                    LongDescription = "Compact design with JBL Signature Sound, 12 hours of playtime, and IPX7 water resistance—ideal for outdoor use.",
+                    LongDescription = "JBL Signature Sound, 12 h playtime, and IPX7 water resistance—ideal for outdoors.",
                     MainImageUrl = "/images/products/14-main.jpg",
                     Price = 150m,
                     Stock = 35,
@@ -222,7 +231,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 15,
                     Name = "Gaming Headset",
                     ShortDescription = "Over-ear RGB gaming headset",
-                    LongDescription = "Virtual 7.1 surround sound, noise-cancelling mic, memory foam earcups, and USB/3.5 mm connectivity.",
+                    LongDescription = "7.1 virtual surround, noise-cancelling mic, memory foam earcups, USB/3.5 mm connectivity.",
                     MainImageUrl = "/images/products/15-main.jpg",
                     Price = 70m,
                     Stock = 40,
@@ -233,7 +242,7 @@ namespace OnlineElectronicsStore.Data
                     Id = 16,
                     Name = "Racing Wheel Controller",
                     ShortDescription = "Force-feedback racing wheel",
-                    LongDescription = "Realistic force feedback, pedal set with clutch, and adjustable wheel angle—perfect for driving simulators.",
+                    LongDescription = "Realistic force feedback, pedal set with clutch, and adjustable angle—perfect for sims.",
                     MainImageUrl = "/images/products/16-main.jpg",
                     Price = 250m,
                     Stock = 5,
@@ -244,14 +253,13 @@ namespace OnlineElectronicsStore.Data
                     Id = 17,
                     Name = "RGB Mousepad",
                     ShortDescription = "Customizable RGB mousepad for gamers",
-                    LongDescription = "Features dynamic lighting effects, a non-slip rubber bottom, and a smooth surface for precise mouse control.",
+                    LongDescription = "Dynamic lighting, non-slip rubber bottom, and smooth surface for precise control.",
                     MainImageUrl = "/images/products/17-main.jpg",
                     Price = 30m,
                     Stock = 80,
                     CategoryId = 6
                 }
             );
-
 
             // 5. Seed Discounts
             modelBuilder.Entity<Discount>().HasData(
@@ -295,3 +303,4 @@ namespace OnlineElectronicsStore.Data
         }
     }
 }
+

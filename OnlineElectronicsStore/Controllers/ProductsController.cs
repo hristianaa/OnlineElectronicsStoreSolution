@@ -1,16 +1,20 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
-   
     public class ProductsController : Controller
     {
         private readonly IProductService _products;
+
         public ProductsController(IProductService products)
-            => _products = products;
+        {
+            _products = products;
+        }
 
         // GET /Products
         [AllowAnonymous]
@@ -38,7 +42,9 @@ namespace OnlineElectronicsStore.Controllers
         // GET /Products/Create
         [Authorize(Roles = "Admin")]
         public IActionResult Create()
-            => View(new Product());
+        {
+            return View(new Product());
+        }
 
         // POST /Products/Create
         [HttpPost]
