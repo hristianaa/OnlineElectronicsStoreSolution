@@ -1,5 +1,4 @@
 ﻿@model IEnumerable<OnlineElectronicsStore.Models.Wishlist>
-
 @{
     ViewData["Title"] = "My Wishlist";
 }
@@ -21,8 +20,8 @@ else
                 <div class="card h-100">
                     @if (!string.IsNullOrEmpty(w.Product.MainImageUrl))
                     {
-                        <img src="@w.Product.MainImageUrl" 
-                             class="card-img-top" 
+                        <img src="@w.Product.MainImageUrl"
+                             class="card-img-top"
                              alt="@w.Product.Name" />
                     }
                     <div class="card-body">
@@ -37,22 +36,19 @@ else
                             View
                         </a>
 
-                        @* POST‐form to /Wishlist/Remove *@
-                        @using (Html.BeginForm(
-                            actionName: "Remove",
-                            controllerName: "Wishlist",
-                            method: FormMethod.Post,
-                            htmlAttributes: new { @class = "d-inline" }))
-                        {
+                        <form asp-controller="Wishlist"
+                              asp-action="Remove"
+                              method="post"
+                              class="d-inline">
                             @Html.AntiForgeryToken()
                             <input type="hidden" name="productId" value="@w.ProductId" />
                             <button type="submit" class="btn btn-sm btn-danger">
-                                &times; Remove
+                                × Remove
                             </button>
-                        }
+                        </form>
                     </div>
                 </div>
             </div>
         }
     </div>
-}  @* close the else *@
+}
