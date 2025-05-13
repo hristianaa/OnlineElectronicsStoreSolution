@@ -1,4 +1,5 @@
 ﻿// Services/Interfaces/IUserService.cs
+using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -36,5 +37,10 @@ namespace OnlineElectronicsStore.Services.Interfaces
         /// Deletes the user with the given ID; returns true if deleted.
         /// </summary>
         Task<bool> DeleteAsync(int id);
+        
+        /// <summary>
+        /// Updates a user's profile (name, email, optional password). Returns true on success.
+        /// </summary>
+        Task<bool> UpdateProfileAsync(UpdateUserDto dto);
     }
 }
