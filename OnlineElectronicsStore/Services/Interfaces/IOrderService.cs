@@ -32,6 +32,7 @@ namespace OnlineElectronicsStore.Services.Interfaces
         /// Returns true if the order existed and was deleted.
         /// </summary>
         Task<bool> DeleteAsync(int id);
+
     }
 }
 

@@ -26,20 +26,38 @@
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
                     </li>
-                    @* Admin Link Visible Only to Admins *@
+
+                    @* Admin Links *@
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                     {
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="AdminProducts" asp-action="Index">Admin: Products</a>
                         </li>
                     }
+
+                    @* Normal User Links *@
+                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("User"))
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                @User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">My Profile</a></li>
+                                <li><a class="dropdown-item" asp-controller="Orders" asp-action="History">My Orders</a></li>
+                                
+                                <li><a class="dropdown-item" asp-controller="Wishlist" asp-action="Index">Wishlist</a></li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Help">Help & Contacts</a></li>
+                            </ul>
+                        </li>
+                    }
                 </ul>
+
                 <ul class="navbar-nav">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        <li class="nav-item">
-                            <a class="nav-link">@User.Identity.Name</a>
-                        </li>
+                        @* Show Logout for both roles *@
                         <li class="nav-item">
                             <form method="post" asp-controller="Account" asp-action="Logout">
                                 @Html.AntiForgeryToken()
@@ -55,6 +73,7 @@
                         <li class="nav-item">
                             <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
                         </li>
+
                     }
                 </ul>
             </div>
@@ -65,11 +84,11 @@
         @RenderBody()
     </div>
 
-    <!-- 1) Load jQuery first -->
+    <!-- jQuery first -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <!-- 2) Then Bootstrap bundle -->
+    <!-- Bootstrap bundle -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- 3) Finally any per-page scripts (including validation) -->
+    <!-- Page-specific scripts -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>

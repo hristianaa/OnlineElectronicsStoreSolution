@@ -1,0 +1,58 @@
+﻿@model IEnumerable<OnlineElectronicsStore.Models.Wishlist>
+
+@{
+    ViewData["Title"] = "My Wishlist";
+}
+
+<h1>My Wishlist</h1>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        Your wishlist is empty.
+    </div>
+}
+else
+{
+    <div class="row">
+        @foreach (var w in Model)
+        {
+            <div class="col-md-3 mb-4">
+                <div class="card h-100">
+                    @if (!string.IsNullOrEmpty(w.Product.MainImageUrl))
+                    {
+                        <img src="@w.Product.MainImageUrl" 
+                             class="card-img-top" 
+                             alt="@w.Product.Name" />
+                    }
+                    <div class="card-body">
+                        <h5 class="card-title">@w.Product.Name</h5>
+                        <p class="card-text">@w.Product.ShortDescription</p>
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <a asp-controller="Products"
+                           asp-action="Details"
+                           asp-route-id="@w.ProductId"
+                           class="btn btn-sm btn-primary">
+                            View
+                        </a>
+
+                        @* POST‐form to /Wishlist/Remove *@
+                        @using (Html.BeginForm(
+                            actionName: "Remove",
+                            controllerName: "Wishlist",
+                            method: FormMethod.Post,
+                            htmlAttributes: new { @class = "d-inline" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="productId" value="@w.ProductId" />
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                &times; Remove
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}  @* close the else *@

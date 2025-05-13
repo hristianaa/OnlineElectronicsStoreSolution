@@ -1,57 +1,97 @@
-﻿<!-- Views/AdminProducts/Edit.cshtml -->
-@model OnlineElectronicsStore.Models.Product
+﻿@model OnlineElectronicsStore.Models.ViewModels.EditProductViewModel
 @{
     ViewData["Title"] = "Edit Product";
 }
 
 <h1>Edit Product</h1>
-
 @Html.ValidationSummary(true, "", new { @class = "text-danger" })
 
-<form asp-action="Edit" enctype="multipart/form-data">
+<form asp-action="Edit"
+      asp-route-id="@Model.Id"
+      method="post"
+      enctype="multipart/form-data">
     @Html.AntiForgeryToken()
+
     <input type="hidden" asp-for="Id" />
     <input type="hidden" asp-for="CategoryId" />
 
-    <!-- fields: Name, ShortDescription, LongDescription, Price, Stock, Category -->
+    <!-- Name -->
     <div class="mb-3">
         <label asp-for="Name" class="form-label"></label>
         <input asp-for="Name" class="form-control" />
         <span asp-validation-for="Name" class="text-danger" />
     </div>
-    <!-- ... other scalar fields ... -->
 
+    <!-- Short Description -->
     <div class="mb-3">
-        <label class="form-label">Current Main Image</label>
+        <label asp-for="ShortDescription" class="form-label"></label>
+        <textarea asp-for="ShortDescription" class="form-control"></textarea>
+        <span asp-validation-for="ShortDescription" class="text-danger" />
+    </div>
+
+    <!-- Long Description -->
+    <div class="mb-3">
+        <label asp-for="LongDescription" class="form-label"></label>
+        <textarea asp-for="LongDescription" class="form-control" rows="4"></textarea>
+        <span asp-validation-for="LongDescription" class="text-danger" />
+    </div>
+
+    <!-- Price -->
+    <div class="mb-3">
+        <label asp-for="Price" class="form-label"></label>
+        <input asp-for="Price" class="form-control" />
+        <span asp-validation-for="Price" class="text-danger" />
+    </div>
+
+    <!-- Stock -->
+    <div class="mb-3">
+        <label asp-for="Stock" class="form-label"></label>
+        <input asp-for="Stock" class="form-control" />
+        <span asp-validation-for="Stock" class="text-danger" />
+    </div>
+
+    <!-- Main Image Upload -->
+    <div class="mb-3">
+        <label asp-for="MainImageFile" class="form-label"></label>
         @if (!string.IsNullOrEmpty(Model.MainImageUrl))
         {
-            <div class="mb-2"><img src="@Url.Content(Model.MainImageUrl)" width="150" /></div>
+            <div class="mb-2">
+                <img src="@Model.MainImageUrl" width="150" class="img-thumbnail" />
+            </div>
         }
-        <input type="file" name="mainImageFile" class="form-control" />
+        <input asp-for="MainImageFile" class="form-control" type="file" />
+        <span asp-validation-for="MainImageFile" class="text-danger" />
     </div>
+
+    <!-- Additional Photos Upload -->
     <div class="mb-3">
-        <label class="form-label">Existing Photos</label>
-        <div class="row">
-            @foreach (var photo in Model.Photos)
-            {
-                <div class="col-3 text-center mb-3">
-                    <img src="@Url.Content(photo.Url)" class="img-thumbnail" />
-                    <form asp-action="DeletePhoto" method="post">
-                        @Html.AntiForgeryToken()
-                        <input type="hidden" name="photoId" value="@photo.Id" />
-                        <input type="hidden" name="productId" value="@Model.Id" />
-                        <button type="submit" class="btn btn-sm btn-danger mt-1">&times;</button>
-                    </form>
-                </div>
-            }
-        </div>
+        <label asp-for="PhotoFiles" class="form-label"></label>
+        <input asp-for="PhotoFiles" class="form-control" type="file" multiple />
+        <span asp-validation-for="PhotoFiles" class="text-danger" />
     </div>
-    <div class="mb-3">
-        <label class="form-label">Add More Photos</label>
-        <input type="file" name="photoFiles" multiple class="form-control" />
-    </div>
+
+    <!-- Actions -->
     <button type="submit" class="btn btn-success">Save</button>
     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+
+    <hr />
+
+    <!-- Existing Photos (delete each) -->
+    <h5>Existing Photos</h5>
+    <div class="row">
+        @foreach (var photo in Model.Photos)
+        {
+            <div class="col-3 text-center mb-3">
+                <img src="@photo.Url" class="img-thumbnail mb-2" />
+                <form asp-action="DeletePhoto" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="photoId" value="@photo.Id" />
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-sm btn-danger">&times;</button>
+                </form>
+            </div>
+        }
+    </div>
 </form>
 
 @section Scripts {

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
+using OnlineElectronicsStore.Models.ViewModels;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
@@ -52,57 +53,6 @@ namespace OnlineElectronicsStore.Controllers
             return View(product);
         }
 
-        // GET: /AdminProducts/Create
-        public async Task<IActionResult> Create()
-        {
-            await PopulateCategoriesDropDownList();
-            return View(new Product());
-        }
-
-        // POST: /AdminProducts/Create
-        [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(
-            Product product,
-            IFormFile? mainImageFile,
-            IFormFileCollection? photoFiles)
-        {
-            if (!ModelState.IsValid)
-            {
-                await PopulateCategoriesDropDownList(product.CategoryId);
-                return View(product);
-            }
-
-            if (mainImageFile?.Length > 0)
-            {
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(mainImageFile.FileName)}";
-                var dir = Path.Combine(_env.WebRootPath, "images", "products");
-                Directory.CreateDirectory(dir);
-                var path = Path.Combine(dir, fileName);
-                await using var stream = new FileStream(path, FileMode.Create);
-                await mainImageFile.CopyToAsync(stream);
-                product.MainImageUrl = $"/images/products/{fileName}";
-            }
-
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
-
-            if (photoFiles?.Any() == true)
-            {
-                foreach (var file in photoFiles.Where(f => f.Length > 0))
-                {
-                    var extraFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                    var extraDir = Path.Combine(_env.WebRootPath, "images", "products");
-                    Directory.CreateDirectory(extraDir);
-                    var extraPath = Path.Combine(extraDir, extraFileName);
-                    await using var fs = new FileStream(extraPath, FileMode.Create);
-                    await file.CopyToAsync(fs);
-                    await _photoService.AddPhotoAsync(product.Id, $"/images/products/{extraFileName}");
-                }
-            }
-
-            return RedirectToAction(nameof(Index));
-        }
-
         // GET: /AdminProducts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
@@ -110,52 +60,80 @@ namespace OnlineElectronicsStore.Controllers
                                         .Include(p => p.Photos)
                                         .FirstOrDefaultAsync(p => p.Id == id);
             if (product == null) return NotFound();
+
             await PopulateCategoriesDropDownList(product.CategoryId);
-            return View(product);
+
+            var vm = new EditProductViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                ShortDescription = product.ShortDescription,
+                LongDescription = product.LongDescription,
+                Price = product.Price,
+                Stock = product.Stock,
+                CategoryId = product.CategoryId,
+                MainImageUrl = product.MainImageUrl,
+                Photos = product.Photos.ToList()
+            };
+
+            return View(vm);
         }
 
         // POST: /AdminProducts/Edit/5
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(
-            int id,
-            Product product,
-            IFormFile? mainImageFile,
-            IFormFileCollection? photoFiles)
+        public async Task<IActionResult> Edit(EditProductViewModel vm)
         {
-            if (id != product.Id) return BadRequest();
             if (!ModelState.IsValid)
             {
-                await PopulateCategoriesDropDownList(product.CategoryId);
-                return View(product);
+                await PopulateCategoriesDropDownList(vm.CategoryId);
+                return View(vm);
             }
 
-            if (mainImageFile?.Length > 0)
+            var product = await _context.Products
+                                        .Include(p => p.Photos)
+                                        .FirstOrDefaultAsync(p => p.Id == vm.Id);
+            if (product == null) return NotFound();
+
+            // Map scalar properties
+            product.Name = vm.Name;
+            product.ShortDescription = vm.ShortDescription;
+            product.LongDescription = vm.LongDescription;
+            product.Price = vm.Price;
+            product.Stock = vm.Stock;
+            product.CategoryId = vm.CategoryId;
+
+            // Handle main image upload
+            if (vm.MainImageFile?.Length > 0)
             {
-                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(mainImageFile.FileName)}";
+                var fn = $"{Guid.NewGuid()}{Path.GetExtension(vm.MainImageFile.FileName)}";
                 var dir = Path.Combine(_env.WebRootPath, "images", "products");
                 Directory.CreateDirectory(dir);
-                var path = Path.Combine(dir, fileName);
-                await using var stream = new FileStream(path, FileMode.Create);
-                await mainImageFile.CopyToAsync(stream);
-                product.MainImageUrl = $"/images/products/{fileName}";
+                var path = Path.Combine(dir, fn);
+                await using var fs = new FileStream(path, FileMode.Create);
+                await vm.MainImageFile.CopyToAsync(fs);
+                product.MainImageUrl = $"/images/products/{fn}";
             }
 
-            _context.Entry(product).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-
-            if (photoFiles?.Any() == true)
+            // Handle extra photos
+            if (vm.PhotoFiles?.Any() == true)
             {
-                foreach (var file in photoFiles.Where(f => f.Length > 0))
+                var dir = Path.Combine(_env.WebRootPath, "images", "products");
+                Directory.CreateDirectory(dir);
+
+                foreach (var file in vm.PhotoFiles.Where(f => f.Length > 0))
                 {
-                    var extraFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-                    var extraDir = Path.Combine(_env.WebRootPath, "images", "products");
-                    Directory.CreateDirectory(extraDir);
-                    var extraPath = Path.Combine(extraDir, extraFileName);
-                    await using var fs = new FileStream(extraPath, FileMode.Create);
+                    var fn = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                    var path = Path.Combine(dir, fn);
+                    await using var fs = new FileStream(path, FileMode.Create);
                     await file.CopyToAsync(fs);
-                    await _photoService.AddPhotoAsync(product.Id, $"/images/products/{extraFileName}");
+
+                    await _photoService.AddPhotoAsync(product.Id, $"/images/products/{fn}");
                 }
             }
+
+            // Persist
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -168,19 +146,7 @@ namespace OnlineElectronicsStore.Controllers
             return RedirectToAction(nameof(Edit), new { id = productId });
         }
 
-        // POST: /AdminProducts/Delete/5
-        [HttpPost, ActionName("Delete"), ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var product = await _context.Products.FindAsync(id);
-            if (product != null)
-            {
-                _context.Products.Remove(product);
-                await _context.SaveChangesAsync();
-            }
-            return RedirectToAction(nameof(Index));
-        }
-
+        // Helper: category dropdown
         private async Task PopulateCategoriesDropDownList(object? selected = null)
         {
             var cats = await _context.Categories.OrderBy(c => c.Name).ToListAsync();

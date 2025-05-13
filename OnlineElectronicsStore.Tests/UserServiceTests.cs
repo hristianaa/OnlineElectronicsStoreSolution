@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Implementations;
@@ -38,7 +39,8 @@ namespace OnlineElectronicsStore.Tests
         {
             // Arrange
             var context = GetInMemoryDbContext();
-            var service = new UserService(context);
+            var passwordHasher = new PasswordHasher<User>();
+            var service = new UserService(context, passwordHasher);
 
             // Act
             var users = await service.GetAllAsync();
@@ -52,7 +54,8 @@ namespace OnlineElectronicsStore.Tests
         {
             // Arrange
             var context = GetInMemoryDbContext();
-            var service = new UserService(context);
+            var passwordHasher = new PasswordHasher<User>();
+            var service = new UserService(context, passwordHasher);
 
             // Act
             var success = await service.DeleteAsync(2);

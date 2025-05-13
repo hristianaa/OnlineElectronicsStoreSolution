@@ -159,11 +159,10 @@ namespace OnlineElectronicsStore.Controllers
                 Email = vm.Email,
                 NewPassword = vm.NewPassword
             };
-            var result = await _users.UpdateProfileAsync(updateDto);
-            if (!result.Succeeded)
+            var success = await _users.UpdateProfileAsync(updateDto);
+            if (!success)
             {
-                foreach (var error in result.Errors)
-                    ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(string.Empty, "Unable to update profile. Please try again.");
                 return View(vm);
             }
 

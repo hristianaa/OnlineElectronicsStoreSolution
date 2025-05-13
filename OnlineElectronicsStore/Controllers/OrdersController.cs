@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OnlineElectronicsStore.Models.ViewModels;
 using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
@@ -12,6 +13,7 @@ namespace OnlineElectronicsStore.Controllers
     public class OrdersController : Controller
     {
         private readonly IOrderService _orderService;
+
         public OrdersController(IOrderService orderService)
         {
             _orderService = orderService;
@@ -23,13 +25,23 @@ namespace OnlineElectronicsStore.Controllers
         public async Task<IActionResult> Index()
         {
             var orders = await _orderService.GetAllAsync();
-            if (!orders.Any())
+
+            var vm = orders.Select(o => new OrderListItemViewModel
+            {
+                Id = o.Id,
+                CreatedOn = o.OrderDate,           // ← use OrderDate
+                Total = o.TotalAmount,         // ← use TotalAmount
+                Status = o.Status
+            })
+            .ToList();
+
+            if (!vm.Any())
                 ViewBag.Message = "No orders found.";
-            return View(orders);
+
+            return View(vm);
         }
 
         // GET: /Orders/Details/5
-        // Anyone authorized can view a single order (you could restrict to Admin or owner)
         public async Task<IActionResult> Details(int id)
         {
             var order = await _orderService.GetByIdAsync(id);
@@ -38,18 +50,27 @@ namespace OnlineElectronicsStore.Controllers
         }
 
         // GET: /Orders/History
-        // Show the logged‐in user’s order history
         public async Task<IActionResult> History()
         {
             var userId = GetCurrentUserId();
             var userOrders = await _orderService.GetByUserIdAsync(userId);
-            if (!userOrders.Any())
+
+            var vm = userOrders.Select(o => new OrderListItemViewModel
+            {
+                Id = o.Id,
+                CreatedOn = o.OrderDate,         // ← OrderDate
+                Total = o.TotalAmount,       // ← TotalAmount
+                Status = o.Status
+            })
+            .ToList();
+
+            if (!vm.Any())
                 ViewBag.Message = "You have no past orders.";
-            return View(userOrders);
+
+            return View(vm);
         }
 
         // GET: /Orders/Delete/5
-        // Admin only: confirm deletion
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {

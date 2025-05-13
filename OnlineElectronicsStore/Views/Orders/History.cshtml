@@ -1,0 +1,41 @@
+﻿@model IEnumerable<OnlineElectronicsStore.Models.ViewModels.OrderListItemViewModel>
+@{
+    ViewData["Title"] = "My Order History";
+}
+
+<h1>My Order History</h1>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">You have no past orders.</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>@o.Id</td>
+                    <td>@o.CreatedOn.ToString("g")</td>
+                    <td>@o.Total:C</td>
+                    <td>@o.Status</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-link">
+                            View
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
