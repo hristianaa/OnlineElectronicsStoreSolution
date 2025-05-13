@@ -1,14 +1,14 @@
-﻿@model OnlineElectronicsStore.DTOs.OrderDto
-
+﻿@model OnlineElectronicsStore.Models.ViewModels.OrderDetailsViewModel
 
 @{
     ViewData["Title"] = "Order Details";
 }
 
 <h1>Order #@Model.Id</h1>
+
 <p>
     <strong>Date:</strong>
-    @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+    @Model.CreatedOn.ToString("dd/MM/yyyy HH:mm")
 </p>
 <p>
     <strong>Status:</strong>
@@ -16,6 +16,7 @@
 </p>
 
 <h2>Items</h2>
+
 <table class="table">
     <thead>
         <tr>
@@ -32,7 +33,7 @@
                 <td>@line.ProductName</td>
                 <td>@line.Quantity</td>
                 <td>@line.UnitPrice.ToString("C")</td>
-                <td>@(line.Quantity * line.UnitPrice).ToString("C")</td>
+                <td>@line.LineTotal.ToString("C")</td>
             </tr>
         }
     </tbody>
@@ -44,4 +45,4 @@
     </tfoot>
 </table>
 
-<a asp-action="History" class="btn btn-secondary">← Back to History</a>
+<a asp-action="History" class="btn btn-secondary">Back to History</a>
