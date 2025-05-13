@@ -1,4 +1,5 @@
-﻿@model OnlineElectronicsStore.Models.ViewModels.OrderDetailViewModel
+﻿@model OnlineElectronicsStore.Models.ViewModels.OrderDetailsViewModel
+
 @{
     ViewData["Title"] = $"Order #{Model.Id}";
 }
@@ -22,17 +23,17 @@
             <tr>
                 <td>@item.ProductName</td>
                 <td>@item.Quantity</td>
-                <td>@item.UnitPrice:C</td>
-                <td>@item.LineTotal:C</td>
+                <td>@item.UnitPrice.ToString("C")</td>
+                <td>@item.LineTotal.ToString("C")</td>
             </tr>
         }
     </tbody>
     <tfoot>
         <tr>
             <th colspan="3" class="text-end">Total:</th>
-            <th>@Model.Total:C</th>
+            <th>@Model.Total.ToString("C")</th>
         </tr>
     </tfoot>
 </table>
 
-<a asp-action="Index" class="btn btn-secondary">Back to Orders</a>
+<a asp-action="History" class="btn btn-secondary">Back to History</a>

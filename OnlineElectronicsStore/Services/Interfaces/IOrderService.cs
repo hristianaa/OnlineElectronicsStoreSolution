@@ -1,38 +1,29 @@
-﻿// Services/Interfaces/IOrderService.cs
-using OnlineElectronicsStore.Models;
-using System.Collections.Generic;
+﻿//using System.Collections.Generic;
 using System.Threading.Tasks;
+using OnlineElectronicsStore.DTOs;
 
 namespace OnlineElectronicsStore.Services.Interfaces
 {
     public interface IOrderService
     {
         /// <summary>
-        /// Returns all orders, including user and line-item details.
+        /// Returns all orders for a given user, mapped to OrderDto.
         /// </summary>
-        Task<IEnumerable<Order>> GetAllAsync();
+        Task<IEnumerable<OrderDto>> GetOrderHistoryAsync(int userId);
 
         /// <summary>
-        /// Returns a single order by ID, or null if not found.
+        /// Returns one order (with its lines) for a given user, or null.
         /// </summary>
-        Task<Order?> GetByIdAsync(int id);
+        Task<OrderDto?> GetOrderByIdAsync(int userId, int orderId);
 
         /// <summary>
-        /// Returns all orders placed by a specific user.
+        /// Creates a new order entity in the database.
         /// </summary>
-        Task<IEnumerable<Order>> GetByUserIdAsync(int userId);
+        Task<int> CreateOrderAsync(int userId, OrderDto dto);
 
         /// <summary>
-        /// Creates a new order.
+        /// Deletes an order by id; returns true if found and deleted.
         /// </summary>
-        Task CreateAsync(Order order);
-
-        /// <summary>
-        /// Deletes the order with the given ID. 
-        /// Returns true if the order existed and was deleted.
-        /// </summary>
-        Task<bool> DeleteAsync(int id);
-
+        Task<bool> DeleteOrderAsync(int userId, int orderId);
     }
 }
-

@@ -1,4 +1,6 @@
-﻿@model IEnumerable<OnlineElectronicsStore.Models.ViewModels.OrderListItemViewModel>
+﻿@using System.Linq
+@model IEnumerable<OnlineElectronicsStore.Models.ViewModels.OrderHistoryViewModel>
+
 @{
     ViewData["Title"] = "My Order History";
 }
@@ -26,8 +28,8 @@ else
             {
                 <tr>
                     <td>@o.Id</td>
-                    <td>@o.CreatedOn.ToString("g")</td>
-                    <td>@o.Total:C</td>
+                    <td>@o.Date.ToString("g")</td>
+                    <td>@o.Total.ToString("C")</td>
                     <td>@o.Status</td>
                     <td>
                         <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-link">

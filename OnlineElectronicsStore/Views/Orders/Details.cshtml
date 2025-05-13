@@ -1,11 +1,19 @@
 ﻿@model OnlineElectronicsStore.DTOs.OrderDto
+
+
 @{
     ViewData["Title"] = "Order Details";
 }
 
 <h1>Order #@Model.Id</h1>
-<p><strong>Date:</strong> @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")</p>
-<p><strong>Status:</strong> @Model.Status</p>
+<p>
+    <strong>Date:</strong>
+    @Model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+</p>
+<p>
+    <strong>Status:</strong>
+    @Model.Status
+</p>
 
 <h2>Items</h2>
 <table class="table">
@@ -36,4 +44,4 @@
     </tfoot>
 </table>
 
-<a asp-action="History" class="btn btn-secondary">Back to History</a>
+<a asp-action="History" class="btn btn-secondary">← Back to History</a>
