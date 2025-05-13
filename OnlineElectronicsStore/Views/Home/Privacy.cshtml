@@ -1,6 +1,113 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
+    Layout = "_Layout";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container py-5">
+    <h1 class="mb-4">Privacy Policy</h1>
+
+    <p class="lead">
+        At ElectroShop, your privacy is critically important to us. This policy explains what
+        information we collect, why we collect it, and how you can manage it.
+    </p>
+
+    <div class="accordion" id="privacyAccordion">
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading1">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1">
+                    1. Information We Collect
+                </button>
+            </h2>
+            <div id="collapse1" class="accordion-collapse collapse show" aria-labelledby="heading1"
+                 data-bs-parent="#privacyAccordion">
+                <div class="accordion-body">
+                    <ul>
+                        <li><strong>Personal Data:</strong> Name, email address, billing & shipping addresses.</li>
+                        <li><strong>Payment Data:</strong> Last 4 digits of your credit card (we never store full card numbers).</li>
+                        <li><strong>Usage Data:</strong> Browsing behavior, pages visited, product interactions.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading2">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse2" aria-expanded="false" aria-controls="collapse2">
+                    2. How We Use Your Data
+                </button>
+            </h2>
+            <div id="collapse2" class="accordion-collapse collapse" aria-labelledby="heading2"
+                 data-bs-parent="#privacyAccordion">
+                <div class="accordion-body">
+                    <p>We use your information to:</p>
+                    <ol>
+                        <li>Process and fulfill orders</li>
+                        <li>Provide customer support</li>
+                        <li>Send you promotional offers (if you’ve opted in)</li>
+                        <li>Improve our website and services</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading3">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse3" aria-expanded="false" aria-controls="collapse3">
+                    3. Cookies & Tracking
+                </button>
+            </h2>
+            <div id="collapse3" class="accordion-collapse collapse" aria-labelledby="heading3"
+                 data-bs-parent="#privacyAccordion">
+                <div class="accordion-body">
+                    <p>
+                        We use cookies to keep you logged in, remember your preferences, and to understand
+                        how you use our site. You can disable cookies in your browser, but some features
+                        may not work correctly.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading4">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse4" aria-expanded="false" aria-controls="collapse4">
+                    4. Third-Party Services
+                </button>
+            </h2>
+            <div id="collapse4" class="accordion-collapse collapse" aria-labelledby="heading4"
+                 data-bs-parent="#privacyAccordion">
+                <div class="accordion-body">
+                    <p>
+                        We partner with payment processors (Stripe, PayPal), analytics providers (Google Analytics),
+                        and email senders (SendGrid). These services have their own privacy policies—please review
+                        them before proceeding.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading5">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse5" aria-expanded="false" aria-controls="collapse5">
+                    5. Contact Us
+                </button>
+            </h2>
+            <div id="collapse5" class="accordion-collapse collapse" aria-labelledby="heading5"
+                 data-bs-parent="#privacyAccordion">
+                <div class="accordion-body">
+                    <p>
+                        If you have any questions or requests about your data, please email us at
+                        <a href="mailto:privacy@electroshop.com">privacy@electroshop.com</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
