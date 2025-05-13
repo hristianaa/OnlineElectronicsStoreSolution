@@ -7,9 +7,7 @@
 
 <div class="row">
     <div class="col-md-6">
-        <img src="@Model.MainImageUrl"
-             alt="@Model.Name"
-             class="img-fluid mb-3" />
+        <img src="@Model.MainImageUrl" alt="@Model.Name" class="img-fluid mb-3" />
 
         @if (Model.Photos?.Any() == true)
         {
@@ -31,19 +29,15 @@
         <dl class="row">
             <dt class="col-sm-4">Short Description</dt>
             <dd class="col-sm-8">@Model.ShortDescription</dd>
-
             <dt class="col-sm-4">Long Description</dt>
             <dd class="col-sm-8">@Model.LongDescription</dd>
-
             <dt class="col-sm-4">Price</dt>
             <dd class="col-sm-8">@Model.Price.ToString("C")</dd>
-
             <dt class="col-sm-4">Category</dt>
             <dd class="col-sm-8">@Model.Category?.Name</dd>
         </dl>
 
         <div class="mb-3">
-            <!-- Add to Cart (GET) -->
             <a asp-controller="Cart"
                asp-action="Add"
                asp-route-productId="@Model.Id"
@@ -51,10 +45,9 @@
                 Add to Cart
             </a>
 
-            <!-- Add to Wishlist (POST) -->
             @if (User.Identity?.IsAuthenticated == true)
             {
-                <form asp-controller="Wishlists"
+                <form asp-controller="Wishlist"
                       asp-action="Add"
                       method="post"
                       class="d-inline">
@@ -75,8 +68,6 @@
             }
         </div>
 
-        <a asp-action="Index" class="btn btn-secondary">
-            Back to List
-        </a>
+        <a asp-action="Index" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
