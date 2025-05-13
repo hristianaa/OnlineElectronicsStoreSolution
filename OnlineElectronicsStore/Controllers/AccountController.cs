@@ -123,5 +123,52 @@ namespace OnlineElectronicsStore.Controllers
         [HttpGet]
         public IActionResult AccessDenied()
             => View();
+
+        // GET: /Account/Profile
+        [HttpGet]
+        public async Task<IActionResult> Profile()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var user = await _users.GetByIdAsync(int.Parse(userId));
+            if (user == null) return NotFound();
+
+            var vm = new ProfileViewModel
+            {
+                FullName = user.FullName,
+                Email = user.Email
+            };
+            return View(vm);
+        }
+
+        // POST: /Account/Profile
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Profile(ProfileViewModel vm)
+        {
+            if (!ModelState.IsValid)
+                return View(vm);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null) return Unauthorized();
+
+            var updateDto = new UpdateUserDto
+            {
+                Id = int.Parse(userId),
+                FullName = vm.FullName,
+                Email = vm.Email,
+                NewPassword = vm.NewPassword
+            };
+            var result = await _users.UpdateProfileAsync(updateDto);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                    ModelState.AddModelError(string.Empty, error.Description);
+                return View(vm);
+            }
+
+            TempData["SuccessMessage"] = "Profile updated successfully.";
+            return RedirectToAction(nameof(Profile));
+        }
     }
 }
