@@ -15,9 +15,7 @@ namespace OnlineElectronicsStore.Controllers
         private readonly IAuthService _auth;
         private readonly IUserService _users;
 
-        public AccountController(
-            IAuthService authService,
-            IUserService userService)
+        public AccountController(IAuthService authService, IUserService userService)
         {
             _auth = authService;
             _users = userService;
@@ -26,9 +24,7 @@ namespace OnlineElectronicsStore.Controllers
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
-        {
-            return View(new LoginViewModel { ReturnUrl = returnUrl });
-        }
+            => View(new LoginViewModel { ReturnUrl = returnUrl });
 
         // POST: /Account/Login
         [HttpPost, ValidateAntiForgeryToken]
@@ -44,7 +40,7 @@ namespace OnlineElectronicsStore.Controllers
                 return View(vm);
             }
 
-            // Build our claims
+            // Build claims
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -52,16 +48,16 @@ namespace OnlineElectronicsStore.Controllers
                 new Claim(ClaimTypes.Email,          user.Email),
                 new Claim(ClaimTypes.Role,           user.Role)
             };
-
             var identity = new ClaimsIdentity(
                 claims,
                 CookieAuthenticationDefaults.AuthenticationScheme);
 
+            // Sign in with cookie
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(identity));
 
-            // Redirect back or home
+            // Redirect to returnUrl or home
             if (!string.IsNullOrEmpty(vm.ReturnUrl) && Url.IsLocalUrl(vm.ReturnUrl))
                 return Redirect(vm.ReturnUrl);
 
@@ -80,14 +76,12 @@ namespace OnlineElectronicsStore.Controllers
             if (!ModelState.IsValid)
                 return View(vm);
 
-            // Make sure email isn’t already taken
             if (await _users.GetByEmailAsync(vm.Email) != null)
             {
                 ModelState.AddModelError(nameof(vm.Email), "Email already in use.");
                 return View(vm);
             }
 
-            // Create the user
             var dto = new RegisterDto
             {
                 FullName = vm.FullName,
@@ -97,7 +91,7 @@ namespace OnlineElectronicsStore.Controllers
             };
             var newUser = await _auth.RegisterUserAsync(dto);
 
-            // Auto‐login after registration
+            // Auto sign-in after register
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, newUser.Id.ToString()),
