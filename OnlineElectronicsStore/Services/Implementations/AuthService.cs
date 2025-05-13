@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.DTOs;
@@ -26,9 +28,23 @@ namespace OnlineElectronicsStore.Services.Implementations
 
         public async Task<User?> ValidateCredentialsAsync(string email, string password)
         {
-            // in prod you’d hash/compare
+            // in prod you’d hash & compare
             return await Task.FromResult(
                 _ctx.Users.FirstOrDefault(u => u.Email == email && u.Password == password));
+        }
+
+        public async Task<User> RegisterUserAsync(RegisterDto dto)
+        {
+            var user = new User
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                Password = dto.Password,  // hash in prod!
+                Role = dto.Role
+            };
+            _ctx.Users.Add(user);
+            await _ctx.SaveChangesAsync();
+            return user;
         }
 
         public string GenerateJwtToken(User user)
@@ -40,8 +56,8 @@ namespace OnlineElectronicsStore.Services.Implementations
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Email,          user.Email),
+                new Claim(ClaimTypes.Role,           user.Role)
             };
 
             var token = new JwtSecurityToken(
@@ -55,18 +71,28 @@ namespace OnlineElectronicsStore.Services.Implementations
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public async Task<User> RegisterUserAsync(RegisterDto dto)
+        public async Task SignInWithCookieAsync(HttpContext httpContext, User user)
         {
-            var user = new User
+            // Build the claims
+            var claims = new[]
             {
-                FullName = dto.FullName,
-                Email = dto.Email,
-                Password = dto.Password, // hash in prod!
-                Role = dto.Role
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name,           user.FullName),
+                new Claim(ClaimTypes.Email,          user.Email),
+                new Claim(ClaimTypes.Role,           user.Role),
             };
-            _ctx.Users.Add(user);
-            await _ctx.SaveChangesAsync();
-            return user;
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            // Actually sign in
+            await httpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal,
+                new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(1)
+                });
         }
     }
 }
