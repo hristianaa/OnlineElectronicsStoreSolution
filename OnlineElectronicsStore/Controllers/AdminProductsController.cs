@@ -1,11 +1,16 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.Models;
-using System.Linq;
-using System.Threading.Tasks;
+using OnlineElectronicsStore.Services.Interfaces;
 
 namespace OnlineElectronicsStore.Controllers
 {
@@ -13,9 +18,17 @@ namespace OnlineElectronicsStore.Controllers
     public class AdminProductsController : Controller
     {
         private readonly AppDbContext _context;
-        public AdminProductsController(AppDbContext context)
+        private readonly IProductPhotoService _photoService;
+        private readonly IWebHostEnvironment _env;
+
+        public AdminProductsController(
+            AppDbContext context,
+            IProductPhotoService photoService,
+            IWebHostEnvironment env)
         {
             _context = context;
+            _photoService = photoService;
+            _env = env;
         }
 
         // GET: /AdminProducts
@@ -23,6 +36,7 @@ namespace OnlineElectronicsStore.Controllers
         {
             var products = await _context.Products
                                          .Include(p => p.Category)
+                                         .Include(p => p.Photos)
                                          .ToListAsync();
             return View(products);
         }
@@ -47,7 +61,10 @@ namespace OnlineElectronicsStore.Controllers
 
         // POST: /AdminProducts/Create
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Product product)
+        public async Task<IActionResult> Create(
+            Product product,
+            IFormFile? mainImageFile,
+            IFormFileCollection? photoFiles)
         {
             if (!ModelState.IsValid)
             {
@@ -55,55 +72,100 @@ namespace OnlineElectronicsStore.Controllers
                 return View(product);
             }
 
+            if (mainImageFile?.Length > 0)
+            {
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(mainImageFile.FileName)}";
+                var dir = Path.Combine(_env.WebRootPath, "images", "products");
+                Directory.CreateDirectory(dir);
+                var path = Path.Combine(dir, fileName);
+                await using var stream = new FileStream(path, FileMode.Create);
+                await mainImageFile.CopyToAsync(stream);
+                product.MainImageUrl = $"/images/products/{fileName}";
+            }
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
+
+            if (photoFiles?.Any() == true)
+            {
+                foreach (var file in photoFiles.Where(f => f.Length > 0))
+                {
+                    var extraFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                    var extraDir = Path.Combine(_env.WebRootPath, "images", "products");
+                    Directory.CreateDirectory(extraDir);
+                    var extraPath = Path.Combine(extraDir, extraFileName);
+                    await using var fs = new FileStream(extraPath, FileMode.Create);
+                    await file.CopyToAsync(fs);
+                    await _photoService.AddPhotoAsync(product.Id, $"/images/products/{extraFileName}");
+                }
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
         // GET: /AdminProducts/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var product = await _context.Products
+                                        .Include(p => p.Photos)
+                                        .FirstOrDefaultAsync(p => p.Id == id);
             if (product == null) return NotFound();
-
             await PopulateCategoriesDropDownList(product.CategoryId);
             return View(product);
         }
 
         // POST: /AdminProducts/Edit/5
         [HttpPost, ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Product product)
+        public async Task<IActionResult> Edit(
+            int id,
+            Product product,
+            IFormFile? mainImageFile,
+            IFormFileCollection? photoFiles)
         {
             if (id != product.Id) return BadRequest();
-
             if (!ModelState.IsValid)
             {
                 await PopulateCategoriesDropDownList(product.CategoryId);
                 return View(product);
             }
 
-            try
+            if (mainImageFile?.Length > 0)
             {
-                _context.Update(product);
-                await _context.SaveChangesAsync();
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(mainImageFile.FileName)}";
+                var dir = Path.Combine(_env.WebRootPath, "images", "products");
+                Directory.CreateDirectory(dir);
+                var path = Path.Combine(dir, fileName);
+                await using var stream = new FileStream(path, FileMode.Create);
+                await mainImageFile.CopyToAsync(stream);
+                product.MainImageUrl = $"/images/products/{fileName}";
             }
-            catch (DbUpdateConcurrencyException)
+
+            _context.Entry(product).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+
+            if (photoFiles?.Any() == true)
             {
-                if (!ProductExists(product.Id)) return NotFound();
-                throw;
+                foreach (var file in photoFiles.Where(f => f.Length > 0))
+                {
+                    var extraFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+                    var extraDir = Path.Combine(_env.WebRootPath, "images", "products");
+                    Directory.CreateDirectory(extraDir);
+                    var extraPath = Path.Combine(extraDir, extraFileName);
+                    await using var fs = new FileStream(extraPath, FileMode.Create);
+                    await file.CopyToAsync(fs);
+                    await _photoService.AddPhotoAsync(product.Id, $"/images/products/{extraFileName}");
+                }
             }
 
             return RedirectToAction(nameof(Index));
         }
 
-        // GET: /AdminProducts/Delete/5
-        public async Task<IActionResult> Delete(int id)
+        // POST: /AdminProducts/DeletePhoto
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePhoto(int photoId, int productId)
         {
-            var product = await _context.Products
-                                        .Include(p => p.Category)
-                                        .FirstOrDefaultAsync(p => p.Id == id);
-            if (product == null) return NotFound();
-            return View(product);
+            await _photoService.DeletePhotoAsync(photoId);
+            return RedirectToAction(nameof(Edit), new { id = productId });
         }
 
         // POST: /AdminProducts/Delete/5
@@ -111,22 +173,18 @@ namespace OnlineElectronicsStore.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var product = await _context.Products.FindAsync(id);
-            _context.Products.Remove(product!);
-            await _context.SaveChangesAsync();
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
             return RedirectToAction(nameof(Index));
         }
 
-        // Helpers
-
-        private bool ProductExists(int id) =>
-            _context.Products.Any(p => p.Id == id);
-
-        private async Task PopulateCategoriesDropDownList(object? selectedCategory = null)
+        private async Task PopulateCategoriesDropDownList(object? selected = null)
         {
-            var categories = await _context.Categories
-                                           .OrderBy(c => c.Name)
-                                           .ToListAsync();
-            ViewBag.CategoryId = new SelectList(categories, nameof(Category.Id), nameof(Category.Name), selectedCategory);
+            var cats = await _context.Categories.OrderBy(c => c.Name).ToListAsync();
+            ViewBag.CategoryId = new SelectList(cats, "Id", "Name", selected);
         }
     }
 }
