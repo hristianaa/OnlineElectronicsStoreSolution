@@ -9,9 +9,12 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
             <a class="navbar-brand" asp-controller="Home" asp-action="Index">ElectroShop</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav" aria-controls="navbarNav"
+                    aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -27,28 +30,56 @@
                         <a class="nav-link" asp-controller="Home" asp-action="Privacy">Privacy</a>
                     </li>
 
-                    @* Admin Links *@
+                    @* — Admin-only link *@
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Admin"))
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="AdminProducts" asp-action="Index">Admin: Products</a>
+                            <a class="nav-link" asp-controller="AdminProducts" asp-action="Index">
+                                Admin: Products
+                            </a>
                         </li>
                     }
 
-                    @* Normal User Links *@
+                    @* — Normal-user dropdown *@
                     @if (User.Identity?.IsAuthenticated == true && User.IsInRole("User"))
                     {
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a class="nav-link dropdown-toggle" href="#" id="userMenu"
+                               role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 @User.Identity.Name
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="userMenu">
-                                <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">My Profile</a></li>
-                                <li><a class="dropdown-item" asp-controller="Orders" asp-action="History">My Orders</a></li>
-                                
-                                <li><a class="dropdown-item" asp-controller="Wishlist" asp-action="Index">Wishlist</a></li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Account" asp-action="Profile">
+                                        My Profile
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Orders" asp-action="History">
+                                        My Orders
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Wishlist" asp-action="Index">
+                                        My Wishlist
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider" /></li>
-                                <li><a class="dropdown-item" asp-controller="Home" asp-action="Help">Help & Contacts</a></li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Support" asp-action="Help">
+                                        Help & FAQ
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item"
+                                       asp-controller="Support" asp-action="Contact">
+                                        Contact Us
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                     }
@@ -57,23 +88,27 @@
                 <ul class="navbar-nav">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        @* Show Logout for both roles *@
                         <li class="nav-item">
-                            <form method="post" asp-controller="Account" asp-action="Logout">
+                            <form asp-controller="Account" asp-action="Logout" method="post">
                                 @Html.AntiForgeryToken()
-                                <button type="submit" class="btn btn-link nav-link">Logout</button>
+                                <button type="submit" class="btn btn-link nav-link">
+                                    Logout
+                                </button>
                             </form>
                         </li>
                     }
                     else
                     {
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">
+                                Login
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
+                            <a class="nav-link" asp-controller="Account" asp-action="Register">
+                                Register
+                            </a>
                         </li>
-
                     }
                 </ul>
             </div>
@@ -88,7 +123,6 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <!-- Bootstrap bundle -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Page-specific scripts -->
     @RenderSection("Scripts", required: false)
 </body>
 </html>
