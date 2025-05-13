@@ -1,0 +1,22 @@
+﻿@model OnlineElectronicsStore.Models.SupportMessage
+@{
+    ViewData["Title"] = $"Message #{Model.Id}";
+}
+
+<h1>Message #@Model.Id</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Submitted On</dt>
+    <dd class="col-sm-9">@Model.SubmittedOn.ToLocalTime().ToString("f")</dd>
+
+    <dt class="col-sm-3">Name</dt>
+    <dd class="col-sm-9">@Model.Name</dd>
+
+    <dt class="col-sm-3">Email</dt>
+    <dd class="col-sm-9">@Model.Email</dd>
+
+    <dt class="col-sm-3">Message</dt>
+    <dd class="col-sm-9">@Model.Message</dd>
+</dl>
+
+<a asp-action="Index" class="btn btn-secondary">Back to List</a>

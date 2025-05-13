@@ -1,10 +1,15 @@
-﻿using System.Collections.Generic;
+﻿// DTOs/CartDto.cs
+using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace OnlineElectronicsStore.DTOs
 {
     public class CartDto
     {
-        public List<CartItemDto> Items { get; set; } = new List<CartItemDto>();
-        public decimal TotalPrice { get; set; }
+        public List<CartLineDto> Items { get; set; } = new();
+        public decimal TotalPrice => Items.Sum(i => i.Quantity * i.UnitPrice);
+
+        
     }
 }

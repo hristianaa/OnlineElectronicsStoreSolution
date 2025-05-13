@@ -1,4 +1,6 @@
 ﻿@model IEnumerable<OnlineElectronicsStore.Models.Product>
+@using OnlineElectronicsStore.DTOs
+
 @{
     ViewData["Title"] = "Shop All Products";
     Layout = "_Layout";
@@ -25,6 +27,7 @@
 
 <div class="container py-5">
     <h1 class="mb-4 text-center">Our Products</h1>
+
     @if (!Model.Any())
     {
         <div class="alert alert-warning text-center">
@@ -45,13 +48,29 @@
                             <h5 class="card-title">@p.Name</h5>
                             <p class="text-muted mb-2">@p.Category?.Name</p>
                             <p class="card-text fw-bold">@p.Price.ToString("C")</p>
-                            <div class="mt-auto">
+
+                            <div class="mt-auto d-grid gap-2">
+                                <!-- View Details button -->
                                 <a asp-action="Details"
+                                   asp-controller="Products"
                                    asp-route-id="@p.Id"
-                                   class="btn btn-primary w-100">
+                                   class="btn btn-outline-secondary">
                                     View Details
                                     <i class="bi bi-arrow-right-circle ms-1"></i>
                                 </a>
+
+                                <!-- Add to Cart form -->
+                                <form asp-controller="Cart"
+                                      asp-action="Add"
+                                      asp-route-productId="@p.Id"
+                                      method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="quantity" value="1" />
+                                    <button type="submit" class="btn btn-primary">
+                                        Add to Cart
+                                        <i class="bi bi-cart-plus ms-1"></i>
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -60,5 +79,3 @@
         </div>
     }
 </div>
-
-

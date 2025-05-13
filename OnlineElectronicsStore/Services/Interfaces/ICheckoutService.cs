@@ -1,18 +1,14 @@
-﻿// Services/Interfaces/ICheckoutService.cs
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using OnlineElectronicsStore.Models.ViewModels;
 
 namespace OnlineElectronicsStore.Services.Interfaces
 {
-    /// <summary>
-    /// Handles converting a user’s cart into an order.
-    /// </summary>
     public interface ICheckoutService
     {
         /// <summary>
-        /// Creates an order for the given user from their cart items,
-        /// then clears those items out of the cart.
-        /// Returns true on success, false if the cart was empty.
+        /// Creates an Order record from the user's cart and checkout VM, 
+        /// returns the new Order.Id
         /// </summary>
-        Task<bool> PlaceOrderAsync(int userId);
+        Task<int> PlaceOrderAsync(int userId, CheckoutViewModel checkout);
     }
 }

@@ -1,127 +1,111 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using OnlineElectronicsStore.Data;
 using OnlineElectronicsStore.DTOs;
 using OnlineElectronicsStore.Models;
 using OnlineElectronicsStore.Services.Implementations;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
-namespace OnlineElectronicsStore.Tests
+namespace OnlineElectronicsStore.Tests.Services
 {
     public class CartServiceTests
     {
         private AppDbContext GetInMemoryDbContext()
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: $"CartDb_{System.Guid.NewGuid()}")
                 .Options;
 
-            var context = new AppDbContext(options);
-            context.Database.EnsureCreated();
-
-            // Seed a user
-            if (!context.Users.Any())
-            {
-                context.Users.Add(new User
-                {
-                    Id = 1,
-                    Email = "test@example.com",
-                    Password = "1234",
-                    FullName = "Test",
-                    Role = "User"
-                });
-            }
-
-            // Seed a category
-            if (!context.Categories.Any())
-            {
-                context.Categories.Add(new Category { Id = 1, Name = "TestCat" });
-            }
-
-            // Seed a product
-            if (!context.Products.Any())
-            {
-                context.Products.Add(new Product
-                {
-                    Id = 1,
-                    Name = "Test Product",
-                    ShortDescription = "Test",
-                    LongDescription = "Test product long description",
-                    MainImageUrl = "http://example.com/img.jpg",
-                    Price = 50m,
-                    Stock = 20,
-                    CategoryId = 1
-                });
-            }
-
-            context.SaveChanges();
-            return context;
+            // seed with one product
+            var ctx = new AppDbContext(options);
+            ctx.Products.Add(new Product { Id = 1, Name = "Widget", Price = 9.99m });
+            ctx.SaveChanges();
+            return ctx;
         }
 
         [Fact]
-        public async Task AddToCartAsync_ShouldAddItemToCart()
+        public async Task AddToCartAsync_NewItem_InsertsCartItem()
         {
+            // Arrange
             var ctx = GetInMemoryDbContext();
-            var service = new CartService(ctx);
-
-            var dto = new CartItemDto
-            {
-                ProductId = 1,
-                Quantity = 2
-            };
-
-            var result = await service.AddToCartAsync(
-                userId: 1,
-                item: dto
-            );
-
-            Assert.True(result);
-            Assert.Equal(1, ctx.CartItems.Count());
-        }
-
-        [Fact]
-        public async Task RemoveFromCartAsync_ShouldRemoveItem()
-        {
-            var ctx = GetInMemoryDbContext();
-            ctx.CartItems.Add(new CartItem
-            {
-                ProductId = 1,
-                Quantity = 2,
-                UserId = 1
-            });
-            await ctx.SaveChangesAsync();
-
             var service = new CartService(ctx);
             var dto = new CartItemDto { ProductId = 1, Quantity = 2 };
 
-            var result = await service.RemoveFromCartAsync(
-                userId: 1,
-                item: dto
-            );
+            // Act
+            var added = await service.AddToCartAsync(userId: 42, item: dto);
 
-            Assert.True(result);
+            // Assert
+            Assert.True(added);
+            var dbItem = ctx.CartItems.Single();
+            Assert.Equal(42, dbItem.UserId);
+            Assert.Equal(1, dbItem.ProductId);
+            Assert.Equal(2, dbItem.Quantity);
+        }
+
+        [Fact]
+        public async Task AddToCartAsync_ExistingItem_IncrementsQuantity()
+        {
+            // Arrange
+            var ctx = GetInMemoryDbContext();
+            ctx.CartItems.Add(new CartItem { UserId = 42, ProductId = 1, Quantity = 1 });
+            ctx.SaveChanges();
+
+            var service = new CartService(ctx);
+            var dto = new CartItemDto { ProductId = 1, Quantity = 3 };
+
+            // Act
+            var added = await service.AddToCartAsync(userId: 42, item: dto);
+
+            // Assert
+            Assert.True(added);
+            var dbItem = ctx.CartItems.Single();
+            Assert.Equal(4, dbItem.Quantity); // 1 + 3
+        }
+
+        [Fact]
+        public async Task RemoveFromCartAsync_ExistingItem_RemovesIt()
+        {
+            // Arrange
+            var ctx = GetInMemoryDbContext();
+            ctx.CartItems.Add(new CartItem { UserId = 42, ProductId = 1, Quantity = 5 });
+            ctx.SaveChanges();
+
+            var service = new CartService(ctx);
+            var dto = new CartItemDto { ProductId = 1, Quantity = 0 };
+
+            // Act
+            var removed = await service.RemoveFromCartAsync(userId: 42, item: dto);
+
+            // Assert
+            Assert.True(removed);
             Assert.Empty(ctx.CartItems);
         }
 
         [Fact]
-        public async Task GetCartDtoAsync_ShouldReturnCart()
+        public async Task GetCartDtoAsync_ReturnsDtoWithCorrectTotals()
         {
+            // Arrange
             var ctx = GetInMemoryDbContext();
-            ctx.CartItems.Add(new CartItem
-            {
-                ProductId = 1,
-                Quantity = 1,
-                UserId = 1
-            });
-            await ctx.SaveChangesAsync();
+            ctx.CartItems.AddRange(
+                new CartItem { UserId = 42, ProductId = 1, Quantity = 2 },
+                new CartItem { UserId = 42, ProductId = 1, Quantity = 3 }
+            );
+            ctx.SaveChanges();
 
             var service = new CartService(ctx);
-            var cart = await service.GetCartDtoAsync(userId: 1);
 
-            Assert.NotNull(cart);
-            Assert.Single(cart.Items);
+            // Act
+            var dto = await service.GetCartDtoAsync(userId: 42);
+
+            // Assert
+            // Should coalesce into one CartLineDto with Quantity = 5
+            Assert.Single(dto.Items);
+            var line = dto.Items.Single();
+            Assert.Equal(1, line.ProductId);
+            Assert.Equal(5, line.Quantity);
+            Assert.Equal(9.99m, line.UnitPrice);
+            Assert.Equal(5 * 9.99m, dto.TotalPrice);
         }
     }
 }

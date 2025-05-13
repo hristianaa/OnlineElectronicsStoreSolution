@@ -39,8 +39,10 @@ namespace OnlineElectronicsStore.Controllers
         // GET /CartItems/Create
         public async Task<IActionResult> Create()
         {
-            var prods = await _products.GetAllAsync();
-            ViewBag.Products = new SelectList(prods, "Id", "Name");
+            ViewBag.Products = new SelectList(
+                await _products.GetAllAsync(),
+                "Id",
+                "Name");
             return View(new CartItem());
         }
 
@@ -50,8 +52,10 @@ namespace OnlineElectronicsStore.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var prods = await _products.GetAllAsync();
-                ViewBag.Products = new SelectList(prods, "Id", "Name");
+                ViewBag.Products = new SelectList(
+                    await _products.GetAllAsync(),
+                    "Id",
+                    "Name");
                 return View(model);
             }
 
@@ -63,12 +67,15 @@ namespace OnlineElectronicsStore.Controllers
         // GET /CartItems/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var item = await _cart.GetCartItemByIdAsync(id);
-            if (item == null) return NotFound();
+            var model = await _cart.GetCartItemByIdAsync(id);
+            if (model == null) return NotFound();
 
-            var prods = await _products.GetAllAsync();
-            ViewBag.Products = new SelectList(prods, "Id", "Name", item.ProductId);
-            return View(item);
+            ViewBag.Products = new SelectList(
+                await _products.GetAllAsync(),
+                "Id",
+                "Name",
+                model.ProductId);
+            return View(model);
         }
 
         // POST /CartItems/Edit/5
@@ -76,11 +83,13 @@ namespace OnlineElectronicsStore.Controllers
         public async Task<IActionResult> Edit(int id, CartItem model)
         {
             if (id != model.Id) return BadRequest();
-
             if (!ModelState.IsValid)
             {
-                var prods = await _products.GetAllAsync();
-                ViewBag.Products = new SelectList(prods, "Id", "Name", model.ProductId);
+                ViewBag.Products = new SelectList(
+                    await _products.GetAllAsync(),
+                    "Id",
+                    "Name",
+                    model.ProductId);
                 return View(model);
             }
 
@@ -91,9 +100,9 @@ namespace OnlineElectronicsStore.Controllers
         // GET /CartItems/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
-            var item = await _cart.GetCartItemByIdAsync(id);
-            if (item == null) return NotFound();
-            return View(item);
+            var model = await _cart.GetCartItemByIdAsync(id);
+            if (model == null) return NotFound();
+            return View(model);
         }
 
         // POST /CartItems/Delete/5

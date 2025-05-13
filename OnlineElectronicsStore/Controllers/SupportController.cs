@@ -12,7 +12,15 @@ namespace OnlineElectronicsStore.Controllers
         private readonly AppDbContext _db;
         public SupportController(AppDbContext db) => _db = db;
 
-        // GET: /Support/Contact
+        // GET /Support/Help
+        [HttpGet]
+        public IActionResult Help()
+        {
+            // will render Views/Support/Help.cshtml
+            return View();
+        }
+
+        // GET /Support/Contact
         [HttpGet]
         public IActionResult Contact()
         {
@@ -20,14 +28,13 @@ namespace OnlineElectronicsStore.Controllers
             return View(new ContactFormModel());
         }
 
-        // POST: /Support/Contact
+        // POST /Support/Contact
         [HttpPost, ValidateAntiForgeryToken]
         public async Task<IActionResult> Contact(ContactFormModel vm)
         {
             if (!ModelState.IsValid)
                 return View(vm);
 
-            // map & save
             var msg = new SupportMessage
             {
                 Name = vm.Name,
@@ -39,6 +46,13 @@ namespace OnlineElectronicsStore.Controllers
 
             TempData["SupportSuccess"] = "Your message has been sent, thank you!";
             return RedirectToAction(nameof(Contact));
+        }
+
+        // (Optional) GET /Support/Confirmation
+        [HttpGet]
+        public IActionResult Confirmation()
+        {
+            return View();  // Views/Support/Confirmation.cshtml
         }
     }
 }

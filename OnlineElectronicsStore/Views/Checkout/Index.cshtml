@@ -1,0 +1,117 @@
+﻿@model OnlineElectronicsStore.Models.ViewModels.CheckoutViewModel
+@using OnlineElectronicsStore.DTOs
+
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<h1>Checkout</h1>
+
+<h2>Your Cart</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Unit Price</th>
+            <th>Qty</th>
+            <th>Line Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var line in Model.Items)
+        {
+            <tr>
+                <td>@line.ProductName</td>
+                <td>@line.UnitPrice.ToString("C")</td>
+                <td>@line.Quantity</td>
+                <td>@(line.Quantity * line.UnitPrice).ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+    <tfoot>
+        <tr>
+            <td colspan="3" class="text-end"><strong>Subtotal:</strong></td>
+            <td>@Model.Subtotal.ToString("C")</td>
+        </tr>
+        <tr>
+            <td colspan="3" class="text-end"><strong>Shipping:</strong></td>
+            <td>@Model.ShippingFee.ToString("C")</td>
+        </tr>
+        @if (Model.DiscountApplied > 0)
+        {
+            <tr class="table-success">
+                <td colspan="3" class="text-end">
+                    <strong>Discount (@Model.DiscountCode):</strong>
+                </td>
+                <td>-@Model.DiscountApplied.ToString("C")</td>
+            </tr>
+            <tr>
+                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                <td>@Model.TotalAfterDiscount.ToString("C")</td>
+            </tr>
+        }
+        else
+        {
+            <tr>
+                <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                <td>@Model.Total.ToString("C")</td>
+            </tr>
+        }
+    </tfoot>
+</table>
+
+<hr />
+
+<h3>Have a discount code?</h3>
+<form asp-action="Index" method="post" class="row g-2">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="action" value="Apply" />
+    <div class="col-auto">
+        <input asp-for="DiscountCode"
+               class="form-control"
+               placeholder="Enter code" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-outline-primary">
+            Apply
+        </button>
+    </div>
+    @if (!string.IsNullOrEmpty(Model.DiscountMessage))
+    {
+        <div class="col-12 text-danger">
+            @Model.DiscountMessage
+        </div>
+    }
+</form>
+
+<hr />
+
+<form asp-action="Index" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="action" value="Confirm" />
+    <input type="hidden" asp-for="DiscountCode" />
+    <input type="hidden" asp-for="DiscountApplied" />
+    <div class="mb-3">
+        <label asp-for="ShippingAddress" class="form-label"></label>
+        <input asp-for="ShippingAddress" class="form-control" />
+        <span asp-validation-for="ShippingAddress" class="text-danger"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="PaymentMethod" class="form-label"></label>
+        <input asp-for="PaymentMethod" class="form-control" />
+        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-success">
+        Confirm &amp; Pay
+        @(Model.DiscountApplied > 0
+            ? Model.TotalAfterDiscount
+            : Model.Total)
+        .ToString("C")
+    </button>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
