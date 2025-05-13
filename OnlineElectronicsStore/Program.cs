@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -19,57 +20,66 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductPhotoService, ProductPhotoService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-
-
-// 🔐 Auth: JWT + Cookies
-var jwt = builder.Configuration.GetSection("Jwt");
+// 🔐 Auth: Cookie ← MVC pages, JWT → API
+var jwtSection = builder.Configuration.GetSection("Jwt");
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    // Make cookies the default for all authentication/authorization
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 })
-.AddJwtBearer(o =>
-{
-    o.TokenValidationParameters = new TokenValidationParameters
+    // 1️⃣ Cookie handler for MVC
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwt["Issuer"],
-        ValidAudience = jwt["Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt["Key"]!))
-    };
-})
-.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, opts =>
-{
-    opts.LoginPath = "/Account/Login";
-    opts.LogoutPath = "/Account/Logout";
-    opts.ExpireTimeSpan = TimeSpan.FromHours(1);
-});
+        opts.LoginPath = "/Account/Login";
+        opts.LogoutPath = "/Account/Logout";
+        opts.AccessDeniedPath = "/Account/AccessDenied";
+        opts.ExpireTimeSpan = TimeSpan.FromHours(1);
+    })
+    // 2️⃣ JWT handler for your [ApiController]s
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, opts =>
+    {
+        opts.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSection["Issuer"],
+            ValidAudience = jwtSection["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                                            Encoding.UTF8.GetBytes(jwtSection["Key"]!))
+        };
+    });
 
 builder.Services.AddAuthorization();
 
 // 🌐 CORS
 builder.Services.AddCors(o => o.AddPolicy("AllowFrontend", p =>
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()
+    p.AllowAnyOrigin()
+     .AllowAnyHeader()
+     .AllowAnyMethod()
 ));
 
 // 📦 EF Core
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 📘 Swagger + API + MVC
+// 📘 Swagger + MVC + API
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Online Electronics Store API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Online Electronics Store API",
+        Version = "v1"
+    });
 });
 builder.Services.AddControllersWithViews();
 
@@ -84,12 +94,13 @@ using (var scope = app.Services.CreateScope())
     catch (Exception ex) { logger.LogError(ex, "Migration failed"); }
 }
 
-// ─── Middleware pipeline ───────────────────────────────────────────
+// ─── Middleware ────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
+    app.UseSwaggerUI(c =>
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1"));
 }
 else
 {
@@ -102,14 +113,15 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("AllowFrontend");
+
+// **ATTENTION** order matters here
 app.UseAuthentication();
 app.UseAuthorization();
 
-// ─── Endpoint mapping ──────────────────────────────────────────────
-// Attribute-routed API controllers
+// Map API controllers (they’ll use JWT when you send a bearer token)
 app.MapControllers();
 
-// Conventional MVC route (root “/” goes to HomeController → Index)
+// Map MVC controllers (they’ll use cookies by default)
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}"
