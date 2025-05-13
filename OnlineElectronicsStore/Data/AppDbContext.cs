@@ -20,6 +20,7 @@ namespace OnlineElectronicsStore.Data
         public DbSet<Discount> Discounts { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<SupportMessage> SupportMessages { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
