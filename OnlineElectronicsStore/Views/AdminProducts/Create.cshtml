@@ -1,0 +1,39 @@
+﻿<!-- Views/AdminProducts/Create.cshtml -->
+@model OnlineElectronicsStore.Models.Product
+@{
+    ViewData["Title"] = "Create Product";
+}
+
+<h1>Create Product</h1>
+
+@Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+<form asp-action="Create" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <!-- fields: Name, ShortDescription, LongDescription, Price, Stock, Category -->
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger" />
+    </div>
+    <!-- ... other scalar fields ... -->
+
+    <div class="mb-3">
+        <label class="form-label">Main Image</label>
+        <input type="file" name="mainImageFile" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Additional Photos</label>
+        <input type="file" name="photoFiles" multiple class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

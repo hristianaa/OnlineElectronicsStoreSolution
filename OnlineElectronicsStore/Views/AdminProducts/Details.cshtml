@@ -1,0 +1,33 @@
+﻿<!-- Views/AdminProducts/Details.cshtml -->
+@model OnlineElectronicsStore.Models.Product
+@{
+    ViewData["Title"] = "Product Details";
+}
+
+<h1>@Model.Name</h1>
+<p>@Model.LongDescription</p>
+<ul class="list-unstyled">
+    <li><strong>Category:</strong> @Model.Category.Name</li>
+    <li><strong>Price:</strong> @Model.Price:C</li>
+    <li><strong>Stock:</strong> @Model.Stock</li>
+</ul>
+
+@if (!string.IsNullOrEmpty(Model.MainImageUrl))
+{
+    <div class="mb-3"><img src="@Url.Content(Model.MainImageUrl)" class="img-fluid" /></div>
+}
+@if (Model.Photos.Any())
+{
+    <h5>Additional Photos</h5>
+    <div class="row">
+        @foreach (var photo in Model.Photos)
+        {
+            <div class="col-md-3 mb-3"><img src="@Url.Content(photo.Url)" class="img-thumbnail" /></div>
+        }
+    </div>
+}
+
+<p>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</p>

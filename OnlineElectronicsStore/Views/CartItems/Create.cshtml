@@ -1,32 +1,62 @@
-﻿@model IEnumerable<OnlineElectronicsStore.Models.CartItem>
+﻿@model OnlineElectronicsStore.Models.Product
 @{
-    ViewData["Title"] = "My Cart Items";
+    ViewData["Title"] = "Create Product";
 }
 
-<h1>@ViewData["Title"]</h1>
-<p>
-    <a asp-action="Create" class="btn btn-primary">Add Item</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Product</th>
-            <th>Quantity</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.Product?.Name</td>
-                <td>@item.Quantity</td>
-                <td>
-                    <a asp-action="Details" asp-route-id="@item.Id">View</a> |
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+<h1>Create Product</h1>
+
+@* Show validation errors *@
+@Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+<form asp-action="Create" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+
+    <div class="mb-3">
+        <label asp-for="Name" class="form-label"></label>
+        <input asp-for="Name" class="form-control" />
+        <span asp-validation-for="Name" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="ShortDescription" class="form-label"></label>
+        <input asp-for="ShortDescription" class="form-control" />
+        <span asp-validation-for="ShortDescription" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="LongDescription" class="form-label"></label>
+        <textarea asp-for="LongDescription" class="form-control"></textarea>
+        <span asp-validation-for="LongDescription" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Price" class="form-label"></label>
+        <input asp-for="Price" class="form-control" />
+        <span asp-validation-for="Price" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Stock" class="form-label"></label>
+        <input asp-for="Stock" class="form-control" />
+        <span asp-validation-for="Stock" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="CategoryId" class="form-label">Category</label>
+        <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryId"></select>
+        <span asp-validation-for="CategoryId" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Main Image</label>
+        <input type="file" name="mainImageFile" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Additional Photos</label>
+        <input type="file" name="photoFiles" multiple class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
